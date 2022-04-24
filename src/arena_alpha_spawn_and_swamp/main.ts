@@ -145,26 +145,26 @@ export function loop() {
       }
 
       // 如果为特定id的carrayer，进行分矿采集。
-      if (miner.id === thiefCarryerId) {
-        const allSources = getObjectsByPrototype(StructureContainer);
-        const otherSources = allSources.sort((a, b) => {
-          return mySpawn.getRangeTo(a) - mySpawn.getRangeTo(b);
-        });
-        if (otherSources.length > 6) {
-          // 野外资源已存在
-          const wildSources = otherSources
-            .slice(0, -3)
-            .slice(3)
-            .filter(s => s.store[RESOURCE_ENERGY] > 0);
-          if (wildSources && wildSources.length) {
-            const source = wildSources[0];
-            console.log(`准备采野外资源`, source);
-            mineWildSource(miner, source);
-          }
-        }
+      // if (miner.id === thiefCarryerId) {
+      //   const allSources = getObjectsByPrototype(StructureContainer);
+      //   const otherSources = allSources.sort((a, b) => {
+      //     return mySpawn.getRangeTo(a) - mySpawn.getRangeTo(b);
+      //   });
+      //   if (otherSources.length > 6) {
+      //     // 野外资源已存在
+      //     const wildSources = otherSources
+      //       .slice(0, -3)
+      //       .slice(3)
+      //       .filter(s => s.store[RESOURCE_ENERGY] > 0);
+      //     if (wildSources && wildSources.length) {
+      //       const source = wildSources[0];
+      //       console.log(`准备采野外资源`, source);
+      //       mineWildSource(miner, source);
+      //     }
+      //   }
 
-        // continue;
-      }
+      //   // continue;
+      // }
 
       // 如果塔已经建好，但是能量为0，则运送能量
       if (towers.length) {
