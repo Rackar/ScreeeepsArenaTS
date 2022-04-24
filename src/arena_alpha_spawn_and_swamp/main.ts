@@ -1,4 +1,4 @@
-import { createConstructionSite, findClosestByPath, getObjectsByPrototype, getTicks } from "game/utils";
+import { createConstructionSite, findClosestByPath, getObjectsByPrototype, getTicks, getObjectById } from "game/utils";
 import { ConstructionSite, Creep, Source, StructureContainer, StructureSpawn, StructureTower } from "game/prototypes";
 import {
   ATTACK,
@@ -15,7 +15,7 @@ import {
 } from "game/constants";
 
 import { mineClosestSource } from "./miner/miner";
-import { spawnList } from "./checkCost";
+import { spawnList, unitList, ClassUnit } from "./checkCost";
 
 // 本版本ok
 // 坑1 Spawn初始化store为500，然后tick1变为300
@@ -30,7 +30,7 @@ let startAtkDelay = -1;
 const thiefCarryerId = -1;
 
 export function loop() {
-  const crs = getObjectsByPrototype(Creep);
+  // const crs = getObjectsByPrototype(Creep);
   // Your code goes here
   const mySpawn = getObjectsByPrototype(StructureSpawn).find(c => c.my) as StructureSpawn;
   // const source = getObjectsByPrototype(Source).find(s => s.energy > 0)
@@ -38,7 +38,9 @@ export function loop() {
 
   const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
   const enermySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my) as StructureSpawn;
-  const carryers = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "carry"));
+  const carryers = getObjectsByPrototype(Creep).filter(
+    c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type !== "work")
+  );
   const builders = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "work"));
   const myUnits = getObjectsByPrototype(Creep).filter(c => c.my);
   const warriores = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "attack"));
@@ -61,6 +63,11 @@ export function loop() {
   }
 
   spawnList(mySpawn);
+  const worker = unitList.find(u => u.name === "smallWorker");
+  if (worker && worker.object && worker.alive) {
+    // const workerObj = worker.object;
+    getWildSource(worker, sources, mySpawn);
+  }
 
   // spawnCreep Flow
   // if (carryers.length < 4) {
@@ -269,8 +276,9 @@ export function loop() {
         // 如果有偷塔行为，则防御偷塔
         const thiefEnermy = mySpawn.findClosestByRange(enermys);
         if (thiefEnermy) {
-          const thiefRange = archer.getRangeTo(thiefEnermy);
-          if (thiefRange < range && thiefRange <= 20) {
+          const thiefRange = mySpawn.getRangeTo(thiefEnermy);
+          if (thiefRange <= 40 && Math.abs(thiefEnermy.x - mySpawn.x) < 10) {
+            console.log("检测到偷塔");
             enermy = thiefEnermy;
             range = thiefRange;
           }
@@ -342,6 +350,47 @@ export function loop() {
   outputHits(carryers, "carryer");
 }
 
+function getWildSource(worker: ClassUnit, sources: StructureContainer[], mySpawn: StructureSpawn): void {
+  const workerObj = worker.object;
+  if (!workerObj) {
+    return;
+  }
+
+  const allSources = getObjectsByPrototype(StructureContainer);
+  const sortedSources = allSources.sort((a, b) => {
+    return mySpawn.getRangeTo(a) - mySpawn.getRangeTo(b);
+  });
+  if (sortedSources.length > 6) {
+    // 野外资源已存在 优先
+    const wildSources = sortedSources
+      .slice(0, -3)
+      .slice(3)
+      .filter(s => s.store[RESOURCE_ENERGY] > 0);
+    if (wildSources && wildSources.length) {
+      const source = wildSources[0];
+      console.log(`准备采野外资源`);
+      mineWildSource(worker, source);
+    } else {
+      mineClosestSource(workerObj, sources, mySpawn);
+    }
+  } else {
+    mineClosestSource(workerObj, sources, mySpawn);
+  }
+
+  // 否则采自己的
+  // if (sortedSources.length > 0) {
+  //   const mySources = sortedSources.slice(0, 3).filter(s => s.store[RESOURCE_ENERGY] > 0);
+  //   if (mySources && mySources.length) {
+  //     mineClosestSource(workerObj, mySources, mySpawn);
+  //     return mySources[0];
+  //   } else {
+  //     return null;
+  //   }
+  // } else {
+  //   return null;
+  // }
+}
+
 function outputHits(creeps: Creep[], name: string) {
   for (const creep of creeps) {
     // const creep = creeps[i];
@@ -394,7 +443,30 @@ function outputHits(creeps: Creep[], name: string) {
 
 // 首先测试快速提矿进行extention建造，对经济的影响
 
-function mineWildSource(miner: Creep, source: StructureContainer) {
+function mineWildSource(worker: ClassUnit, source: StructureContainer) {
+  // if (!worker.aimId) {
+  //   worker.aimId = source.id;
+  // } else if (worker.aimId !== source.id) {
+  //   source = getObjectById(worker.aimId) as StructureContainer;
+  // }
+
+  // check if ground is not empty
+  console.log(worker);
+
+  const workerObj = worker.object;
+  if (workerObj) {
+    workerObj.moveTo(source);
+    if (workerObj.getRangeTo(source) <= 1) {
+      if (source.store[RESOURCE_ENERGY] > 0) {
+        workerObj.drop(RESOURCE_ENERGY);
+      }
+
+      if (workerObj.withdraw(source, RESOURCE_ENERGY) === OK) {
+        workerObj.drop(RESOURCE_ENERGY);
+      }
+    }
+  }
+  //  扔到地上以后，是一个Resource对象
   // 建一个extention 一边挖一边收集 这里需要有worker。前面代码需求带
 }
 
@@ -440,14 +512,15 @@ function remoteAttackAndRun(archer: Creep, enermy: Creep, enermys: Creep[]) {
       // 最近有近战组件，风筝
       // 监测到掉血才后退 不浪费战力
       const range = archer.getRangeTo(closestEnermy);
-      if (archer.hits < archer.hitsMax * 0.8 && range <= 3) {
+      if (archer.hits < archer.hitsMax * 0.9 && range <= 2) {
         const x = archer.x + archer.x - enermy.x;
         const y = archer.y + archer.y - enermy.y;
         archer.moveTo({ x, y });
       }
     } else if (closestEnermy && closestEnermy.body.some(b => b.type === "ranged_attack")) {
+      const range = archer.getRangeTo(closestEnermy);
       // 最近有远程组件，风筝 低血量就撤
-      if (archer.hits < archer.hitsMax * 0.5) {
+      if (archer.hits < archer.hitsMax * 0.6 && range <= 3) {
         const x = archer.x + archer.x - enermy.x;
         const y = archer.y + archer.y - enermy.y;
         archer.moveTo({ x, y });

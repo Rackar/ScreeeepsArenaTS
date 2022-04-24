@@ -119,41 +119,64 @@ interface IUnit {
   repeat?: boolean;
   object?: Creep | null;
   alive?: boolean;
+  name?: string;
+  // isAlive: function (string):boolean ;
 }
-const list: IUnit[] = [
-  { bodys: UNITS.smallCarryer },
-  { bodys: UNITS.smallCarryer },
-  { bodys: UNITS.smallCarryer },
-  { bodys: UNITS.smallWorker },
-  { bodys: UNITS.smallArcher },
-  { bodys: UNITS.smallArcher },
-  { bodys: UNITS.smallArcher },
-  { bodys: UNITS.smallArcher },
-  { bodys: UNITS.smallHealer },
-  { bodys: UNITS.smallArcher },
-  { bodys: UNITS.smallArcher },
-  { bodys: UNITS.smallArcher },
-  { bodys: UNITS.smallArcher, repeat: true },
-  { bodys: UNITS.smallHealer }
+class ClassUnit implements IUnit {
+  public bodys: BodyPartConstant[];
+  public repeat?: boolean;
+  public object?: Creep | null;
+  public name?: string;
+  public aimId?: any | null;
+  public constructor(bodys: BodyPartConstant[], repeat?: boolean, object?: Creep | null, name?: string) {
+    // 构造函数
+    this.bodys = bodys;
+    this.repeat = repeat;
+    this.object = object;
+    this.name = name;
+  }
+
+  public get alive(): boolean {
+    if (this.object?.hits) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+const unitList: ClassUnit[] = [
+  new ClassUnit(UNITS.smallCarryer, false, null, "smallCarryer"),
+  new ClassUnit(UNITS.smallCarryer, false, null, "smallCarryer"),
+  new ClassUnit(UNITS.smallCarryer, false, null, "smallCarryer"),
+  new ClassUnit(UNITS.smallWorker, false, null, "smallWorker"),
+  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
+  new ClassUnit(UNITS.smallHealer, false, null, "smallHealer"),
+  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, true, null, "smallArcher"),
+  new ClassUnit(UNITS.smallHealer, false, null, "smallHealer")
 ];
 
 function spawnList(mySpawn: StructureSpawn) {
-  const unit = list.find(unit1 => !unit1.object || !unit1.alive);
+  const unit = unitList.find(unit1 => !unit1.object || !unit1.alive);
   if (unit) {
     const newUnit = mySpawn.spawnCreep(unit.bodys).object;
     if (newUnit) {
       console.log("新生产单位", newUnit);
       unit.object = newUnit;
-      unit.alive = true;
     }
   } else {
     // 造兵列表已结束，重复造标记为repeat的兵
 
-    const repeatUnit = list.find(unit1 => unit1.repeat);
+    const repeatUnit = unitList.find(unit1 => unit1.repeat);
     if (repeatUnit) {
       mySpawn.spawnCreep(repeatUnit.bodys);
     }
   }
 }
 
-export { spawnList };
+export { spawnList, unitList, ClassUnit };
