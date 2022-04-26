@@ -1,18 +1,6 @@
 import { createConstructionSite, findClosestByPath, getObjectsByPrototype, getTicks, getObjectById } from "game/utils";
 import { ConstructionSite, Creep, Source, StructureContainer, StructureSpawn, StructureTower } from "game/prototypes";
-import {
-  ATTACK,
-  CARRY,
-  ERR_NOT_IN_RANGE,
-  HEAL,
-  MOVE,
-  OK,
-  RANGED_ATTACK,
-  RESOURCE_ENERGY,
-  TOUGH,
-  TOWER_RANGE,
-  WORK
-} from "game/constants";
+import { ATTACK, CARRY, ERR_NOT_IN_RANGE, HEAL, MOVE, OK, RANGED_ATTACK, RESOURCE_ENERGY, TOUGH, TOWER_RANGE, WORK } from "game/constants";
 
 import { mineClosestSource } from "./miner/miner";
 import { spawnList, unitList, ClassUnit } from "./checkCost";
@@ -39,7 +27,8 @@ export function loop() {
   const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
   const enermySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my) as StructureSpawn;
   const carryers = getObjectsByPrototype(Creep).filter(
-    c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type !== "work")
+    c => c.my && c.body.some(b => b.type === "carry")
+    // && c.body.every(b => b.type !== "work")
   );
   const builders = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "work"));
   const myUnits = getObjectsByPrototype(Creep).filter(c => c.my);
@@ -63,11 +52,11 @@ export function loop() {
   }
 
   spawnList(mySpawn);
-  const worker = unitList.find(u => u.name === "smallWorker");
-  if (worker && worker.object && worker.alive) {
-    // const workerObj = worker.object;
-    getWildSource(worker, sources, mySpawn);
-  }
+  // const worker = unitList.find(u => u.name === "smallWorker");
+  // if (worker && worker.object && worker.alive) {
+  //   // const workerObj = worker.object;
+  //   getWildSource(worker, sources, mySpawn);
+  // }
 
   // spawnCreep Flow
   // if (carryers.length < 4) {
@@ -110,12 +99,7 @@ export function loop() {
     const constructionSite = getObjectsByPrototype(ConstructionSite).find(o => o.my);
 
     // 判断是否需要建塔
-    if (
-      getTicks() >= 200 &&
-      (!constructionSite || constructionSite.progress < constructionSite.progressTotal) &&
-      canBuildFlag &&
-      AllowBuildTower
-    ) {
+    if (getTicks() >= 200 && (!constructionSite || constructionSite.progress < constructionSite.progressTotal) && canBuildFlag && AllowBuildTower) {
       console.log("建塔流程");
       if (mySpawn.store[RESOURCE_ENERGY] < 20 || towers.length) {
         canBuildFlag = false;
@@ -247,24 +231,23 @@ export function loop() {
   for (let i = 0; i < archeres.length; i++) {
     const archer = archeres[i];
 
-    // 建塔前不出击
+    // 准备好之前不出击
     if (!startAttack) {
       const enemy = archer.findClosestByRange(enermys);
-      if (!enemy) {
-        continue;
+
+      if (enemy) {
+        const range = archer.getRangeTo(enemy);
+        if (range <= 20) {
+          // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
+          remoteAttackAndRun(archer, enemy, enermys);
+        }
       }
 
-      const range = archer.getRangeTo(enemy);
-      if (range <= 20) {
-        // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
-        remoteAttackAndRun(archer, enemy, enermys);
+      // 否则，分两批集结
+      if (i % 2 === 0) {
+        archer.moveTo({ x: mySpawn.x - 4, y: mySpawn.y - 4 });
       } else {
-        // 分两批集结
-        if (i % 2 === 0) {
-          archer.moveTo({ x: mySpawn.x - 4, y: mySpawn.y - 4 });
-        } else {
-          archer.moveTo({ x: mySpawn.x + 4, y: mySpawn.y + 4 });
-        }
+        archer.moveTo({ x: mySpawn.x + 4, y: mySpawn.y + 4 });
       }
     } else {
       if (enermys && enermys.length) {
@@ -341,9 +324,7 @@ export function loop() {
     }
   }
 
-  console.log(
-    `warriors num: ${warriores.length},   doctors:${doctors.length},   archeres: ${archeres.length},   workers: ${carryers.length}. ||| base energy: ${mySpawn.store[RESOURCE_ENERGY]}, base heal: ${mySpawn.hits}`
-  );
+  console.log(`warriors num: ${warriores.length},   doctors:${doctors.length},   archeres: ${archeres.length},   workers: ${carryers.length}. ||| base energy: ${mySpawn.store[RESOURCE_ENERGY]}, base heal: ${mySpawn.hits}`);
   outputHits(warriores, "warrior");
   outputHits(doctors, "doctor");
   outputHits(archeres, "archer");
