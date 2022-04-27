@@ -130,17 +130,35 @@ function extensionPreBuild(worker: ClassUnit) {
     return;
   }
 
+  // 有可能容器提前消失，按比例减少ext的数量。最多3个
+  let countLimit = 3;
+  const resources = getObjectsByPrototype(Resource);
+  const target = workerObj.findClosestByRange(resources);
+  if (target && workerObj.getRangeTo(target) <= 1) {
+    const { amount } = target;
+    countLimit = Math.round(amount / 500);
+  }
+
   const { x, y } = workerObj;
   console.log(x, y);
   if (worker.aim.status === "preBuild") {
     worker.aim.status = "building";
-    for (let i = -1; i < 1; i++) {
-      for (let j = -1; j < 1; j++) {
+    let count = 0;
+    for (let i = -1; i < 2; i++) {
+      for (let j = -1; j < 2; j++) {
+        if (count >= countLimit) {
+          return;
+        }
+
         if (i === 0 && j === 0) {
           continue;
         }
 
-        createConstructionSite({ x: x + i, y: y + j }, StructureExtension);
+        count++;
+        const info = createConstructionSite({ x: x + i, y: y + j }, StructureExtension);
+        if (info.error) {
+          count--;
+        }
       }
     }
   }
