@@ -15,8 +15,8 @@ import {
 } from "game/constants";
 import { ScoreCollector, RESOURCE_SCORE } from "arena";
 
-import { withdrawClosestContainer } from "../arena_alpha_spawn_and_swamp/miner/miner";
-import { spawnList, ClassUnit, UNITS } from "../arena_alpha_spawn_and_swamp/checkCost";
+import { withdrawClosestContainer } from "../arena_alpha_spawn_and_swamp/units/miner";
+import { spawnList, ClassUnit, UNITS } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
 
 let attacker: Creep | undefined;

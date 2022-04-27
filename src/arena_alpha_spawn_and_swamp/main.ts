@@ -23,8 +23,8 @@ import {
   WORK
 } from "game/constants";
 
-import { withdrawClosestContainer, getWildSource } from "./miner/miner";
-import { spawnList, ClassUnit, UNITS } from "./checkCost";
+import { withdrawClosestContainer, getWildSource } from "./units/miner";
+import { spawnList, ClassUnit, UNITS } from "./units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
 
 // 本版本ok

@@ -23,7 +23,7 @@ import {
   WORK
 } from "game/constants";
 
-import { spawnList, ClassUnit } from "../checkCost";
+import { spawnList, ClassUnit } from "./spawnUnit";
 
 const pickedContainerIds: string[] = [];
 
