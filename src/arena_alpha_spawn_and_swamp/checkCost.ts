@@ -1,5 +1,14 @@
 import { ATTACK, BodyPartConstant, CARRY, HEAL, MOVE, RANGED_ATTACK, TOUGH, WORK } from "game/constants";
-import { ConstructionSite, Creep, Source, StructureContainer, StructureSpawn, StructureTower } from "game/prototypes";
+import {
+  ConstructionSite,
+  Creep,
+  Source,
+  StructureContainer,
+  StructureSpawn,
+  StructureTower,
+  GameObject,
+  Structure
+} from "game/prototypes";
 
 // use when test cost
 // const [MOVE, WORK, CARRY, ATTACK, RANGED_ATTACK, HEAL, TOUGH] = ['MOVE', 'WORK', 'CARRY', 'ATTACK', 'RANGED_ATTACK', 'HEAL', 'TOUGH']
@@ -64,7 +73,8 @@ function calcCost(array: string[]) {
 const UNITS = {
   smallCarryer: [MOVE, CARRY],
   smallWorker: [MOVE, WORK, CARRY],
-  fastCarryer: [MOVE, MOVE, MOVE, CARRY, CARRY, CARRY],
+
+  fastCarryer: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
   footMan: [MOVE, MOVE, ATTACK, ATTACK, MOVE, ATTACK],
   fastTank: [
     TOUGH,
@@ -128,12 +138,12 @@ class ClassUnit implements IUnit {
   public object?: Creep | null;
   public name?: string;
   public aimId?: any | null;
-  public constructor(bodys: BodyPartConstant[], repeat?: boolean, object?: Creep | null, name?: string) {
+  public aim?: { obj: StructureContainer; status: string } | null;
+  public constructor(bodys: BodyPartConstant[], name?: string, repeat?: boolean) {
     // 构造函数
     this.bodys = bodys;
-    this.repeat = repeat;
-    this.object = object;
     this.name = name;
+    this.repeat = repeat || false;
   }
 
   public get alive(): boolean {
@@ -145,24 +155,24 @@ class ClassUnit implements IUnit {
   }
 }
 const unitList: ClassUnit[] = [
-  new ClassUnit(UNITS.smallCarryer, false, null, "smallCarryer"),
-  new ClassUnit(UNITS.smallCarryer, false, null, "smallCarryer"),
-  new ClassUnit(UNITS.smallCarryer, false, null, "smallCarryer"),
-  new ClassUnit(UNITS.smallWorker, false, null, "smallWorker"),
-  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
-  new ClassUnit(UNITS.smallHealer, false, null, "smallHealer"),
-  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, false, null, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, true, null, "smallArcher"),
-  new ClassUnit(UNITS.smallHealer, false, null, "smallHealer")
+  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
+  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
+  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
+  new ClassUnit(UNITS.smallWorker, "smallWorker"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallHealer, "smallHealer"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", true),
+  new ClassUnit(UNITS.smallHealer, "smallHealer")
 ];
 
-function spawnList(mySpawn: StructureSpawn) {
-  const unit = unitList.find(unit1 => !unit1.object || !unit1.alive);
+function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
+  const unit = unitsList.find(unit1 => !unit1.object || !unit1.alive);
   if (unit) {
     const newUnit = mySpawn.spawnCreep(unit.bodys).object;
     if (newUnit) {
@@ -172,11 +182,12 @@ function spawnList(mySpawn: StructureSpawn) {
   } else {
     // 造兵列表已结束，重复造标记为repeat的兵
 
-    const repeatUnit = unitList.find(unit1 => unit1.repeat);
+    const repeatUnit = unitsList.find(unit1 => unit1.repeat);
+    console.log("repeat found", repeatUnit);
     if (repeatUnit) {
       mySpawn.spawnCreep(repeatUnit.bodys);
     }
   }
 }
 
-export { spawnList, unitList, ClassUnit };
+export { spawnList, unitList, ClassUnit, UNITS };

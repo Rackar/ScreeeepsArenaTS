@@ -1,9 +1,31 @@
 import { createConstructionSite, findClosestByPath, getObjectsByPrototype, getTicks, getObjectById } from "game/utils";
-import { ConstructionSite, Creep, Source, StructureContainer, StructureSpawn, StructureTower } from "game/prototypes";
-import { ATTACK, CARRY, ERR_NOT_IN_RANGE, HEAL, MOVE, OK, RANGED_ATTACK, RESOURCE_ENERGY, TOUGH, TOWER_RANGE, WORK } from "game/constants";
+import {
+  ConstructionSite,
+  Creep,
+  Source,
+  StructureContainer,
+  StructureExtension,
+  StructureSpawn,
+  StructureTower,
+  Resource
+} from "game/prototypes";
+import {
+  ATTACK,
+  CARRY,
+  ERR_NOT_IN_RANGE,
+  HEAL,
+  MOVE,
+  OK,
+  RANGED_ATTACK,
+  RESOURCE_ENERGY,
+  TOUGH,
+  TOWER_RANGE,
+  WORK
+} from "game/constants";
 
-import { mineClosestSource } from "./miner/miner";
+import { withdrawClosestContainer, getWildSource } from "./miner/miner";
 import { spawnList, unitList, ClassUnit } from "./checkCost";
+import { remoteAttackAndRun } from "../utils/battle";
 
 // 本版本ok
 // 坑1 Spawn初始化store为500，然后tick1变为300
@@ -27,8 +49,7 @@ export function loop() {
   const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
   const enermySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my) as StructureSpawn;
   const carryers = getObjectsByPrototype(Creep).filter(
-    c => c.my && c.body.some(b => b.type === "carry")
-    // && c.body.every(b => b.type !== "work")
+    c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type !== "work")
   );
   const builders = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "work"));
   const myUnits = getObjectsByPrototype(Creep).filter(c => c.my);
@@ -51,47 +72,15 @@ export function loop() {
     }
   }
 
-  spawnList(mySpawn);
-  // const worker = unitList.find(u => u.name === "smallWorker");
-  // if (worker && worker.object && worker.alive) {
-  //   // const workerObj = worker.object;
-  //   getWildSource(worker, sources, mySpawn);
-  // }
+  spawnList(mySpawn, unitList);
 
-  // spawnCreep Flow
-  // if (carryers.length < 4) {
-  //     mySpawn.spawnCreep([MOVE, CARRY]).object
-  //     if (carryers.length == 3) {
-  //         // thiefCarryerId = carryers[2].id;
-  //     }
-  // } else {
-  //     // if(warriores.length<4){
-  //     //     mySpawn.spawnCreep([TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK, ATTACK,ATTACK, ATTACK,MOVE,MOVE,MOVE, ATTACK])
-  //     // }else if (doctors.length<2){
-  //     //     mySpawn.spawnCreep([TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,HEAL])
-  //     // }else if (archeres.length<4){
-  //     //     mySpawn.spawnCreep([TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,MOVE,MOVE, RANGED_ATTACK])
-  //     // }else if (warriores.length<10){
-  //     //     mySpawn.spawnCreep([TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,ATTACK, ATTACK,ATTACK,MOVE,MOVE,MOVE,MOVE,MOVE, ATTACK])
-  //     // }else{
-  //     //     mySpawn.spawnCreep([TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,ATTACK, ATTACK,MOVE,MOVE,MOVE,MOVE,ATTACK])
-  //     // }
-  //     let unit = [MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, RANGED_ATTACK]
-  //     if (archeres.length < 8) {
-  //         unit = [MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, RANGED_ATTACK]
-  //     } else if (doctors.length < 2) {
-  //         unit = [MOVE, MOVE, MOVE, MOVE, MOVE, HEAL, MOVE, MOVE, HEAL]
-  //     }
-  //     else if (archeres.length < 14) {
-  //         unit = [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, MOVE, RANGED_ATTACK]
-  //     } else if (doctors.length < 4) {
-  //         unit = [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, HEAL, MOVE, HEAL]
-  //     } else {
-  //         unit = [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK]
-  //     }
+  // 测试使用单worker野外偷矿建extension
+  const worker = unitList.find(u => u.name === "smallWorker");
 
-  //     mySpawn.spawnCreep(unit)
-  // }
+  if (worker && worker.object && worker.alive) {
+    // const workerObj = worker.object;
+    getWildSource(worker, sources, mySpawn);
+  }
 
   // 采集工人行为
   for (let i = 0; i < carryers.length; i++) {
@@ -99,7 +88,12 @@ export function loop() {
     const constructionSite = getObjectsByPrototype(ConstructionSite).find(o => o.my);
 
     // 判断是否需要建塔
-    if (getTicks() >= 200 && (!constructionSite || constructionSite.progress < constructionSite.progressTotal) && canBuildFlag && AllowBuildTower) {
+    if (
+      getTicks() >= 200 &&
+      (!constructionSite || constructionSite.progress < constructionSite.progressTotal) &&
+      canBuildFlag &&
+      AllowBuildTower
+    ) {
       console.log("建塔流程");
       if (mySpawn.store[RESOURCE_ENERGY] < 20 || towers.length) {
         canBuildFlag = false;
@@ -120,7 +114,7 @@ export function loop() {
             console.log(x, y);
             createConstructionSite({ x, y: y + 2 }, StructureTower);
           } else {
-            mineClosestSource(miner, sources, mySpawn);
+            withdrawClosestContainer(miner, sources, mySpawn);
           }
         } else {
           if (miner.build(constructionSite) === ERR_NOT_IN_RANGE) {
@@ -134,28 +128,6 @@ export function loop() {
       if (!canBuildFlag && mySpawn.store[RESOURCE_ENERGY] > 200 && towers.length === 0) {
         canBuildFlag = true;
       }
-
-      // 如果为特定id的carrayer，进行分矿采集。
-      // if (miner.id === thiefCarryerId) {
-      //   const allSources = getObjectsByPrototype(StructureContainer);
-      //   const otherSources = allSources.sort((a, b) => {
-      //     return mySpawn.getRangeTo(a) - mySpawn.getRangeTo(b);
-      //   });
-      //   if (otherSources.length > 6) {
-      //     // 野外资源已存在
-      //     const wildSources = otherSources
-      //       .slice(0, -3)
-      //       .slice(3)
-      //       .filter(s => s.store[RESOURCE_ENERGY] > 0);
-      //     if (wildSources && wildSources.length) {
-      //       const source = wildSources[0];
-      //       console.log(`准备采野外资源`, source);
-      //       mineWildSource(miner, source);
-      //     }
-      //   }
-
-      //   // continue;
-      // }
 
       // 如果塔已经建好，但是能量为0，则运送能量
       if (towers.length) {
@@ -172,7 +144,7 @@ export function loop() {
         }
       }
 
-      mineClosestSource(miner, sources, mySpawn);
+      withdrawClosestContainer(miner, sources, mySpawn);
     }
   }
 
@@ -240,6 +212,7 @@ export function loop() {
         if (range <= 20) {
           // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
           remoteAttackAndRun(archer, enemy, enermys);
+          continue;
         }
       }
 
@@ -324,52 +297,13 @@ export function loop() {
     }
   }
 
-  console.log(`warriors num: ${warriores.length},   doctors:${doctors.length},   archeres: ${archeres.length},   workers: ${carryers.length}. ||| base energy: ${mySpawn.store[RESOURCE_ENERGY]}, base heal: ${mySpawn.hits}`);
+  console.log(
+    `warriors num: ${warriores.length},   doctors:${doctors.length},   archeres: ${archeres.length},   workers: ${carryers.length}. ||| base energy: ${mySpawn.store[RESOURCE_ENERGY]}, base heal: ${mySpawn.hits}`
+  );
   outputHits(warriores, "warrior");
   outputHits(doctors, "doctor");
   outputHits(archeres, "archer");
   outputHits(carryers, "carryer");
-}
-
-function getWildSource(worker: ClassUnit, sources: StructureContainer[], mySpawn: StructureSpawn): void {
-  const workerObj = worker.object;
-  if (!workerObj) {
-    return;
-  }
-
-  const allSources = getObjectsByPrototype(StructureContainer);
-  const sortedSources = allSources.sort((a, b) => {
-    return mySpawn.getRangeTo(a) - mySpawn.getRangeTo(b);
-  });
-  if (sortedSources.length > 6) {
-    // 野外资源已存在 优先
-    const wildSources = sortedSources
-      .slice(0, -3)
-      .slice(3)
-      .filter(s => s.store[RESOURCE_ENERGY] > 0);
-    if (wildSources && wildSources.length) {
-      const source = wildSources[0];
-      console.log(`准备采野外资源`);
-      mineWildSource(worker, source);
-    } else {
-      mineClosestSource(workerObj, sources, mySpawn);
-    }
-  } else {
-    mineClosestSource(workerObj, sources, mySpawn);
-  }
-
-  // 否则采自己的
-  // if (sortedSources.length > 0) {
-  //   const mySources = sortedSources.slice(0, 3).filter(s => s.store[RESOURCE_ENERGY] > 0);
-  //   if (mySources && mySources.length) {
-  //     mineClosestSource(workerObj, mySources, mySpawn);
-  //     return mySources[0];
-  //   } else {
-  //     return null;
-  //   }
-  // } else {
-  //   return null;
-  // }
 }
 
 function outputHits(creeps: Creep[], name: string) {
@@ -423,91 +357,3 @@ function outputHits(creeps: Creep[], name: string) {
 // 策略分类：地堡流，偷塔流，骚扰流，远程型，重坦近战流，快速流
 
 // 首先测试快速提矿进行extention建造，对经济的影响
-
-function mineWildSource(worker: ClassUnit, source: StructureContainer) {
-  // if (!worker.aimId) {
-  //   worker.aimId = source.id;
-  // } else if (worker.aimId !== source.id) {
-  //   source = getObjectById(worker.aimId) as StructureContainer;
-  // }
-
-  // check if ground is not empty
-  console.log(worker);
-
-  const workerObj = worker.object;
-  if (workerObj) {
-    workerObj.moveTo(source);
-    if (workerObj.getRangeTo(source) <= 1) {
-      if (source.store[RESOURCE_ENERGY] > 0) {
-        workerObj.drop(RESOURCE_ENERGY);
-      }
-
-      if (workerObj.withdraw(source, RESOURCE_ENERGY) === OK) {
-        workerObj.drop(RESOURCE_ENERGY);
-      }
-    }
-  }
-  //  扔到地上以后，是一个Resource对象
-  // 建一个extention 一边挖一边收集 这里需要有worker。前面代码需求带
-}
-
-// 远程攻击边打边后撤
-function remoteAttackAndRun(archer: Creep, enermy: Creep, enermys: Creep[]) {
-  // 找到敌方最近的医疗兵集火
-  const enermyHealers = enermys.filter(c => c.body.some(b => b.type === "heal"));
-  const healer = archer.findClosestByRange(enermyHealers);
-  if (healer) {
-    // console.log(healer)
-    const range = archer.getRangeTo(healer);
-
-    if (range <= 3) {
-      enermy = healer;
-      console.log(`archer id ${archer.id} to enermy healer range: ${range}`);
-    }
-  }
-
-  // 找到血量最低的敌人单位
-  const enermySortLow = enermys
-    .filter(c => c.hits < c.hitsMax)
-    .sort((a, b) => {
-      return a.hits - b.hits;
-    });
-  if (enermySortLow && enermySortLow.length > 0) {
-    const enermyLow = enermySortLow[0];
-    const range = archer.getRangeTo(enermyLow);
-
-    // const rangeToEnermy = archer.getRangeTo(enermy)
-    if (range <= 4) {
-      if (enermyLow.hits / enermyLow.hitsMax < 0.3 || !healer) {
-        enermy = enermyLow;
-        console.log(`archer id ${archer.id} to enermy lowest range: ${range}`);
-      }
-      // console.log(`攻击敌方最低生命单位：`, enermyLow)
-    }
-  }
-
-  const info = archer.rangedAttack(enermy);
-  if (info === OK) {
-    const closestEnermy = archer.findClosestByRange(enermys);
-    if (closestEnermy && closestEnermy.body.some(b => b.type === "attack")) {
-      // 最近有近战组件，风筝
-      // 监测到掉血才后退 不浪费战力
-      const range = archer.getRangeTo(closestEnermy);
-      if (archer.hits < archer.hitsMax * 0.9 && range <= 2) {
-        const x = archer.x + archer.x - enermy.x;
-        const y = archer.y + archer.y - enermy.y;
-        archer.moveTo({ x, y });
-      }
-    } else if (closestEnermy && closestEnermy.body.some(b => b.type === "ranged_attack")) {
-      const range = archer.getRangeTo(closestEnermy);
-      // 最近有远程组件，风筝 低血量就撤
-      if (archer.hits < archer.hitsMax * 0.6 && range <= 3) {
-        const x = archer.x + archer.x - enermy.x;
-        const y = archer.y + archer.y - enermy.y;
-        archer.moveTo({ x, y });
-      }
-    }
-  } else if (info === ERR_NOT_IN_RANGE) {
-    archer.moveTo(enermy);
-  }
-}
