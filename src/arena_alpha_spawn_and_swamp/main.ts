@@ -24,7 +24,7 @@ import {
 } from "game/constants";
 
 import { withdrawClosestContainer, getWildSource } from "./miner/miner";
-import { spawnList, unitList, ClassUnit } from "./checkCost";
+import { spawnList, ClassUnit, UNITS } from "./checkCost";
 import { remoteAttackAndRun } from "../utils/battle";
 
 // 本版本ok
@@ -38,6 +38,25 @@ let startAttack = false;
 let startAtkDelay = -1;
 
 const thiefCarryerId = -1;
+
+const unitList: ClassUnit[] = [
+  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
+  new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 2c2w 460tick出动
+  new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 3c2w 340tick出动 刚好用尽资源
+  // new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
+  new ClassUnit(UNITS.smallWorker, "smallWorker"),
+  new ClassUnit(UNITS.smallWorker, "smallWorker"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallHealer, "smallHealer"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", true),
+  new ClassUnit(UNITS.smallHealer, "smallHealer")
+];
 
 export function loop() {
   // const crs = getObjectsByPrototype(Creep);
@@ -75,11 +94,12 @@ export function loop() {
   spawnList(mySpawn, unitList);
 
   // 测试使用单worker野外偷矿建extension
-  const worker = unitList.find(u => u.name === "smallWorker");
-
-  if (worker && worker.object && worker.alive) {
-    // const workerObj = worker.object;
-    getWildSource(worker, sources, mySpawn);
+  const workers = unitList.filter(u => u.name === "smallWorker");
+  for (const worker of workers) {
+    if (worker && worker.object && worker.alive) {
+      // const workerObj = worker.object;
+      getWildSource(worker, sources, mySpawn);
+    }
   }
 
   // 采集工人行为

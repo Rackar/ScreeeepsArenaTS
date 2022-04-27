@@ -23,7 +23,9 @@ import {
   WORK
 } from "game/constants";
 
-import { spawnList, unitList, ClassUnit } from "../checkCost";
+import { spawnList, ClassUnit } from "../checkCost";
+
+const pickedContainerIds: string[] = [];
 
 function withdrawClosestContainer(miner: Creep, containers: StructureContainer[], mySpawn: StructureSpawn): void {
   // 工人从资源收集能量
@@ -52,12 +54,15 @@ function findAnotherWildSource(worker: ClassUnit, sources: StructureContainer[],
   });
   if (sortedSources.length > 6) {
     // 野外资源已存在 优先
+    console.log("野外资源选择的id", pickedContainerIds);
     const wildSources = sortedSources
       .slice(0, -3)
       .slice(3)
-      .filter(s => s.store[RESOURCE_ENERGY] > 0);
+
+      .filter(s => s.store[RESOURCE_ENERGY] > 0 && pickedContainerIds.indexOf(s.id) === -1);
     if (wildSources && wildSources.length) {
       const source = wildSources[0];
+      pickedContainerIds.push(source.id);
       console.log(`准备采野外资源`);
       worker.aim = {
         obj: source,

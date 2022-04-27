@@ -154,22 +154,6 @@ class ClassUnit implements IUnit {
     }
   }
 }
-const unitList: ClassUnit[] = [
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
-  new ClassUnit(UNITS.smallWorker, "smallWorker"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallHealer, "smallHealer"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", true),
-  new ClassUnit(UNITS.smallHealer, "smallHealer")
-];
 
 function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
   const unit = unitsList.find(unit1 => !unit1.object || !unit1.alive);
@@ -190,4 +174,4 @@ function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
   }
 }
 
-export { spawnList, unitList, ClassUnit, UNITS };
+export { spawnList, ClassUnit, UNITS };
