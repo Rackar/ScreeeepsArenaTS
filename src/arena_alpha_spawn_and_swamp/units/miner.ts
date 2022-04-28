@@ -54,7 +54,7 @@ function findAnotherWildSource(worker: ClassUnit, sources: StructureContainer[],
   });
   if (sortedSources.length > 6) {
     // 野外资源已存在 优先
-    console.log("野外资源选择的id", pickedContainerIds);
+    // console.log("野外资源选择的id", pickedContainerIds);
     const wildSources = sortedSources
       .slice(0, -3)
       .slice(3)
@@ -140,7 +140,7 @@ function extensionPreBuild(worker: ClassUnit) {
   }
 
   const { x, y } = workerObj;
-  console.log(x, y);
+  // console.log(x, y);
   if (worker.aim.status === "preBuild") {
     worker.aim.status = "building";
     let count = 0;
@@ -196,6 +196,9 @@ function PickupSourceAndBuild(worker: ClassUnit) {
   if (sites.length) {
     workerObj.build(sites[0]);
   }
+
+  // 如果资源不多，扩展和身上满了，基地又差太多资源，则放弃换下一家。
+  // todo
 }
 
 function getWildSource(worker: ClassUnit, sources: StructureContainer[], mySpawn: StructureSpawn): void {
@@ -208,7 +211,7 @@ function getWildSource(worker: ClassUnit, sources: StructureContainer[], mySpawn
     workerObj.transfer(mySpawn, RESOURCE_ENERGY);
   }
 
-  console.log(worker);
+  // console.log(worker);
 
   if (worker.aim) {
     switch (worker.aim.status) {

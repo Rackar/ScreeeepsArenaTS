@@ -1,4 +1,11 @@
-import { createConstructionSite, findClosestByPath, getObjectsByPrototype, getTicks, getObjectById } from "game/utils";
+import {
+  createConstructionSite,
+  findClosestByPath,
+  findClosestByRange,
+  getObjectsByPrototype,
+  getTicks,
+  getObjectById
+} from "game/utils";
 import {
   ConstructionSite,
   Creep,
@@ -24,8 +31,11 @@ import {
 } from "game/constants";
 
 import { withdrawClosestContainer, getWildSource } from "./units/miner";
+import { walkAndSteal } from "./units/rider";
 import { spawnList, ClassUnit, UNITS } from "./units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
+
+import { getRange } from "game";
 
 // 本版本ok
 // 坑1 Spawn初始化store为500，然后tick1变为300
@@ -36,8 +46,8 @@ const AllowBuildTower = false; // t开启建塔 f关闭建塔
 
 let startAttack = false;
 let startAtkDelay = -1;
-
-const thiefCarryerId = -1;
+let totalKilled = 0;
+let lastEnemyNumber = 0;
 
 const unitList: ClassUnit[] = [
   new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
@@ -46,16 +56,16 @@ const unitList: ClassUnit[] = [
   // new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
   new ClassUnit(UNITS.smallWorker, "smallWorker"),
   new ClassUnit(UNITS.smallWorker, "smallWorker"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallHealer, "smallHealer"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", true),
-  new ClassUnit(UNITS.smallHealer, "smallHealer")
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.smallHealer, "smallHealer", "atk1"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1", true),
+  new ClassUnit(UNITS.smallHealer, "smallHealer", "atk1")
 ];
 
 export function loop() {
@@ -66,11 +76,12 @@ export function loop() {
   const sources = getObjectsByPrototype(StructureContainer).filter(s => s.store[RESOURCE_ENERGY] > 0);
 
   const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
+
   const enermySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my) as StructureSpawn;
   const carryers = getObjectsByPrototype(Creep).filter(
     c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type !== "work")
   );
-  const builders = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "work"));
+
   const myUnits = getObjectsByPrototype(Creep).filter(c => c.my);
   const warriores = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "attack"));
   const archeres = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "ranged_attack"));
@@ -91,6 +102,18 @@ export function loop() {
     }
   }
 
+  // 判断如果造兵数量不足 但是战力足够已消灭部分敌人，则发起进攻
+  if (totalKilled > 5) {
+    startAttack = true;
+  }
+
+  if (enermys.length < lastEnemyNumber) {
+    totalKilled += lastEnemyNumber - enermys.length;
+    console.log(`${getTicks()} enermys:${enermys.length} killed:${totalKilled}`);
+  }
+
+  lastEnemyNumber = enermys.length;
+
   spawnList(mySpawn, unitList);
 
   // 测试使用单worker野外偷矿建extension
@@ -99,6 +122,14 @@ export function loop() {
     if (worker && worker.object && worker.alive) {
       // const workerObj = worker.object;
       getWildSource(worker, sources, mySpawn);
+    }
+  }
+
+  // 测试使用单骑兵野外骚扰和偷塔
+  const riders = unitList.filter(u => u.name === "rider");
+  for (const rider of riders) {
+    if (rider && rider.object && rider.alive) {
+      walkAndSteal(rider);
     }
   }
 
@@ -219,6 +250,15 @@ export function loop() {
     }
   }
 
+  const center = getGroupCenter("atk1");
+
+  if (center) {
+    const enemy = findClosestByRange(center, enermys);
+    if (enemy && getRange(center, enemy) <= 25 && getRange(center, enemy) >= 10) {
+      calcGourpDistance("atk1", center);
+    }
+  }
+
   // 远程弓箭手行为
   for (let i = 0; i < archeres.length; i++) {
     const archer = archeres[i];
@@ -277,6 +317,79 @@ export function loop() {
         }
       }
     }
+  }
+
+  // 可能有过远导致卡住的bug
+  // tofix
+
+  function getGroupCenter(gourpName = "atk1") {
+    const gourp1 = unitList.filter(u => u.group === gourpName);
+    if (gourp1 && gourp1.length) {
+      let xSum = 0;
+      let ySum = 0;
+      let count = 0;
+
+      for (const creep of gourp1) {
+        if (creep && creep.object && creep.alive) {
+          // const workerObj = worker.object;
+          const { x, y } = creep.object;
+          xSum += x;
+          ySum += y;
+          count++;
+        }
+      }
+
+      const xCenter = xSum / count;
+      const yCenter = ySum / count;
+
+      return { x: xCenter, y: yCenter };
+    } else {
+      return null;
+    }
+  }
+
+  // 简易计算团体内距离，太远则聚拢
+  function calcGourpDistance(gourpName = "atk1", theCenter: { x: number; y: number }) {
+    if (!theCenter) {
+      const centter = getGroupCenter(gourpName);
+      if (!centter) {
+        return;
+      } else {
+        theCenter = centter;
+      }
+    }
+
+    const gourp1 = unitList.filter(u => u.group === gourpName);
+    if (gourp1 && gourp1.length) {
+      const xCenter = theCenter.x;
+      const yCenter = theCenter.y;
+
+      let totalDistance = 0;
+      let maxDistance = 0;
+
+      for (const creep of gourp1) {
+        if (creep && creep.object && creep.alive) {
+          // const workerObj = worker.object;
+          const { x, y } = creep.object;
+          const distance = Math.sqrt(Math.pow(x - xCenter, 2) + Math.pow(y - yCenter, 2));
+          totalDistance += distance;
+          if (distance > maxDistance) {
+            maxDistance = distance;
+          }
+        }
+      }
+
+      if (totalDistance > 50 || maxDistance > 13) {
+        console.log("队形太散，需要聚集");
+        for (const creep of gourp1) {
+          if (creep && creep.object && creep.alive) {
+            creep.object.moveTo({ x: xCenter, y: yCenter });
+          }
+        }
+      }
+    }
+
+    // return { xCenter, yCenter, dis };
   }
 
   // 医疗兵行为
@@ -377,3 +490,7 @@ function outputHits(creeps: Creep[], name: string) {
 // 策略分类：地堡流，偷塔流，骚扰流，远程型，重坦近战流，快速流
 
 // 首先测试快速提矿进行extention建造，对经济的影响
+
+// 需要单独游走 消灭挖矿或者保护我方挖矿
+
+// 检测中间采矿区域是否有地方战斗单位数量小于2，检测是否有carry单位，使用最快近战单位去追击，如果被攻击则绕行

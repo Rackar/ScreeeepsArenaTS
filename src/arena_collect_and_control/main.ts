@@ -27,7 +27,7 @@ const unitList: ClassUnit[] = [
   new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
   new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
   new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer", true),
+  new ClassUnit(UNITS.fastCarryer, "scoreCarryer", "cay1", true),
   new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
 
   new ClassUnit(UNITS.smallArcher, "smallArcher"),

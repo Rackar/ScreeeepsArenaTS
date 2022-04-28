@@ -137,12 +137,14 @@ class ClassUnit implements IUnit {
   public repeat?: boolean;
   public object?: Creep | null;
   public name?: string;
+  public group?: string;
   public aimId?: any | null;
   public aim?: { obj: StructureContainer; status: string } | null;
-  public constructor(bodys: BodyPartConstant[], name?: string, repeat?: boolean) {
+  public constructor(bodys: BodyPartConstant[], name?: string, group?: string, repeat?: boolean) {
     // 构造函数
     this.bodys = bodys;
     this.name = name;
+    this.group = group;
     this.repeat = repeat || false;
   }
 
@@ -160,14 +162,14 @@ function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
   if (unit) {
     const newUnit = mySpawn.spawnCreep(unit.bodys).object;
     if (newUnit) {
-      console.log("新生产单位", newUnit);
+      // console.log("新生产单位", newUnit);
       unit.object = newUnit;
     }
   } else {
     // 造兵列表已结束，重复造标记为repeat的兵
 
     const repeatUnit = unitsList.find(unit1 => unit1.repeat);
-    console.log("repeat found", repeatUnit);
+    // console.log("repeat found", repeatUnit);
     if (repeatUnit) {
       mySpawn.spawnCreep(repeatUnit.bodys);
     }
