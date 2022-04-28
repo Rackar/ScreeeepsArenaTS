@@ -13,6 +13,7 @@ function doExport(name: any, obj: any) {
     }
   }
 }
+
 export const loop = (): void => {
   if (getTime() === 1) {
     doExport("game", game);

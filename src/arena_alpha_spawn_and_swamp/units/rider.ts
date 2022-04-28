@@ -25,11 +25,9 @@ import {
 
 import { spawnList, ClassUnit } from "./spawnUnit";
 
-const pickedContainerIds: string[] = [];
-
-function findAnotherAim(worker: ClassUnit) {
-  const workerObj = worker.object;
-  if (!workerObj) {
+function findAnotherAim(riderUnit: ClassUnit) {
+  const rider = riderUnit.object;
+  if (!rider) {
     return;
   }
 
@@ -37,36 +35,105 @@ function findAnotherAim(worker: ClassUnit) {
 
   const enemySpawn = getObjectsByPrototype(StructureSpawn).find(i => !i.my) as StructureSpawn;
 
-  checkDenfenseOfEnemySpawn(enemySpawn);
+  const mayWin = checkDenfenseOfEnemySpawn(enemySpawn);
+  if (mayWin) {
+    riderUnit.aim = { status: "rushBase" };
 
-  function checkDenfenseOfEnemySpawn(enemySpawn: StructureSpawn) {}
+    walkAndSteal(riderUnit);
+    return;
+  }
 
-  const allSources = getObjectsByPrototype(StructureContainer);
-  const sortedSources = allSources.sort((a, b) => {
-    return mySpawn.getRangeTo(a) - mySpawn.getRangeTo(b);
-  });
-  if (sortedSources.length > 6) {
-    // 野外资源已存在 优先
-    // console.log("野外资源选择的id", pickedContainerIds);
-    const wildSources = sortedSources
-      .slice(0, -3)
-      .slice(3)
+  const enemy = soloEnemy(riderUnit);
+  if (enemy) {
+    riderUnit.aim = { status: "soloEnemy" };
+    riderUnit.object?.moveTo(enemy);
+    riderUnit.object?.attack(enemy);
+    return;
+  }
 
-      .filter(s => s.store[RESOURCE_ENERGY] > 0 && pickedContainerIds.indexOf(s.id) === -1);
-    if (wildSources && wildSources.length) {
-      const source = wildSources[0];
-      pickedContainerIds.push(source.id);
-      console.log(`准备采野外资源`);
-      worker.aim = {
-        obj: source,
-        status: "moving"
-      };
-      getWildSource(worker, sources, mySpawn);
-    } else {
-      withdrawClosestContainer(workerObj, sources, mySpawn);
-    }
+  // const enemy = soloEnemy(riderUnit);
+  // if (enemy) {
+  //   riderUnit.aim = { status: "soloEnemy" };
+  //   riderUnit.object?.moveTo(enemy);
+  //   riderUnit.object?.attack(enemy);
+  //   return;
+  // }
+}
+
+function checkDenfenseOfEnemySpawn(enemySpawn: StructureSpawn) {
+  const enemys = getObjectsByPrototype(Creep).filter(i => !i.my);
+  const enemyFighters = enemys.filter(i => i.body.some(j => j.type === ATTACK || j.type === RANGED_ATTACK));
+  let denfenseFighters = [];
+  if (enemySpawn.x < 10) {
+    // left
+    denfenseFighters = enemyFighters.filter(i => i.x <= 18);
   } else {
-    withdrawClosestContainer(workerObj, sources, mySpawn);
+    // right
+    denfenseFighters = enemyFighters.filter(i => i.x >= 82);
+  }
+
+  // 计算战力和数量
+
+  const count = denfenseFighters.length;
+  let attackNumber = 0;
+  let rangedAttackNumber = 0;
+  for (const fighter of denfenseFighters) {
+    for (const body of fighter.body) {
+      if (body.type === ATTACK) {
+        attackNumber++;
+      } else if (body.type === RANGED_ATTACK) {
+        rangedAttackNumber++;
+      }
+    }
+  }
+
+  const mayWin = count <= 1 || attackNumber + rangedAttackNumber <= 5;
+  return mayWin;
+}
+
+function rushToBase(riderUnit: ClassUnit) {
+  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(i => !i.my) as StructureSpawn;
+  const rider = riderUnit.object;
+  rider?.moveTo(enemySpawn);
+  rider?.attack(enemySpawn);
+}
+
+function stealAttackCarryer(riderUnit: ClassUnit) {
+  if (!riderUnit.object) {
+    return;
+  }
+
+  const rider = riderUnit.object;
+  const enemys = getObjectsByPrototype(Creep).filter(i => !i.my);
+  const enemyCarryer = enemys
+    .filter(i => i.body.some(j => j.type === CARRY || j.type === WORK) || (i.x >= 20 && i.x <= 80))
+    .sort((a, b) => rider.getRangeTo(a) - rider.getRangeTo(b));
+  if (enemyCarryer.length > 0) {
+    const carryer = enemyCarryer[0];
+    riderUnit.aim = { status: "stealAttackCarryer" };
+    riderUnit.object?.moveTo(carryer);
+    riderUnit.object?.attack(carryer);
+  }
+}
+
+function soloEnemy(riderUnit: ClassUnit) {
+  if (!riderUnit.object) {
+    return;
+  }
+
+  const rider = riderUnit.object;
+  const enemys = getObjectsByPrototype(Creep).filter(i => !i.my);
+  const enemyFighters = enemys
+    .filter(i => i.body.some(j => j.type === ATTACK || j.type === RANGED_ATTACK))
+    .filter(i => {
+      return rider.getRangeTo(i) <= 10;
+    });
+
+  if (enemyFighters.length === 1) {
+    const enemy = enemyFighters[0];
+    return enemy;
+  } else {
+    return null;
   }
 }
 
@@ -78,24 +145,23 @@ function walkAndSteal(riderUnit: ClassUnit) {
 
   if (riderUnit.aim) {
     switch (riderUnit.aim.status) {
-      case "moving":
-        checkAimSourceAndMove(riderUnit);
+      case "rushBase":
+        rushToBase(riderUnit);
         break;
-      case "harvesting":
-        checkAimSourceAndHarvest(riderUnit);
+      case "stealAttackCarryer":
+        stealAttackCarryer(riderUnit);
         break;
-      case "preBuild":
-        extensionPreBuild(riderUnit);
+
+      case "soloEnemy":
+        soloEnemy(riderUnit);
         break;
-      case "building":
-        PickupSourceAndBuild(riderUnit);
-        break;
+
       case "quit":
-        findAnotherWildSource(riderUnit, sources, mySpawn);
+        findAnotherAim(riderUnit);
         break;
 
       default:
-        findAnotherWildSource(riderUnit, sources, mySpawn);
+        findAnotherAim(riderUnit);
         break;
     }
   } else {

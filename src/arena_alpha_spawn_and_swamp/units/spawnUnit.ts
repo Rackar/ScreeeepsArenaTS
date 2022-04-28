@@ -139,7 +139,7 @@ class ClassUnit implements IUnit {
   public name?: string;
   public group?: string;
   public aimId?: any | null;
-  public aim?: { obj: StructureContainer; status: string } | null;
+  public aim?: { obj?: StructureContainer; status: string } | null;
   public constructor(bodys: BodyPartConstant[], name?: string, group?: string, repeat?: boolean) {
     // 构造函数
     this.bodys = bodys;

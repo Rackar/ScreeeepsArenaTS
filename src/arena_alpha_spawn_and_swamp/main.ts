@@ -250,14 +250,14 @@ export function loop() {
     }
   }
 
-  const center = getGroupCenter("atk1");
+  // const center = getGroupCenter("atk1");
 
-  if (center) {
-    const enemy = findClosestByRange(center, enermys);
-    if (enemy && getRange(center, enemy) <= 25 && getRange(center, enemy) >= 10) {
-      calcGourpDistance("atk1", center);
-    }
-  }
+  // if (center) {
+  //   const enemy = findClosestByRange(center, enermys);
+  //   if (enemy && getRange(center, enemy) <= 25 && getRange(center, enemy) >= 10) {
+  //     calcGourpDistance("atk1", center);
+  //   }
+  // }
 
   // 远程弓箭手行为
   for (let i = 0; i < archeres.length; i++) {
