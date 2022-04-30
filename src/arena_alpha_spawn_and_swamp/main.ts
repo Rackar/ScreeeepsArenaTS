@@ -31,7 +31,7 @@ import {
 } from "game/constants";
 
 import { withdrawClosestContainer, getWildSource } from "./units/miner";
-import { walkAndSteal } from "./units/rider";
+import { checkAim } from "./units/rider";
 import { spawnList, ClassUnit, UNITS } from "./units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
 
@@ -55,7 +55,7 @@ const unitList: ClassUnit[] = [
   new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 3c2w 340tick出动 刚好用尽资源
   // new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
   new ClassUnit(UNITS.smallWorker, "smallWorker"),
-  new ClassUnit(UNITS.smallWorker, "smallWorker"),
+  new ClassUnit(UNITS.rider, "rider"),
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
@@ -129,7 +129,7 @@ export function loop() {
   const riders = unitList.filter(u => u.name === "rider");
   for (const rider of riders) {
     if (rider && rider.object && rider.alive) {
-      walkAndSteal(rider);
+      checkAim(rider);
     }
   }
 

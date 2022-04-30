@@ -25,7 +25,7 @@ import {
 
 import { spawnList, ClassUnit } from "./spawnUnit";
 
-function findAnotherAim(riderUnit: ClassUnit) {
+function checkAim(riderUnit: ClassUnit) {
   const rider = riderUnit.object;
   if (!rider) {
     return;
@@ -38,17 +38,21 @@ function findAnotherAim(riderUnit: ClassUnit) {
   const mayWin = checkDenfenseOfEnemySpawn(enemySpawn);
   if (mayWin) {
     riderUnit.aim = { status: "rushBase" };
-
-    walkAndSteal(riderUnit);
+    rushToBase(riderUnit);
     return;
   }
 
-  const enemy = soloEnemy(riderUnit);
+  // 单挑近距离敌人
+  const enemy = findCanSoloNearlyEnemy(riderUnit);
   if (enemy) {
     riderUnit.aim = { status: "soloEnemy" };
     riderUnit.object?.moveTo(enemy);
     riderUnit.object?.attack(enemy);
     return;
+  }
+
+  if (!stealAttackCarryer(riderUnit)) {
+    findAndAttackExtension(riderUnit);
   }
 
   // const enemy = soloEnemy(riderUnit);
@@ -98,9 +102,9 @@ function rushToBase(riderUnit: ClassUnit) {
   rider?.attack(enemySpawn);
 }
 
-function stealAttackCarryer(riderUnit: ClassUnit) {
+function stealAttackCarryer(riderUnit: ClassUnit): boolean {
   if (!riderUnit.object) {
-    return;
+    return false;
   }
 
   const rider = riderUnit.object;
@@ -113,10 +117,34 @@ function stealAttackCarryer(riderUnit: ClassUnit) {
     riderUnit.aim = { status: "stealAttackCarryer" };
     riderUnit.object?.moveTo(carryer);
     riderUnit.object?.attack(carryer);
+    return true;
   }
+
+  return false;
 }
 
-function soloEnemy(riderUnit: ClassUnit) {
+function findAndAttackExtension(riderUnit: ClassUnit) {
+  if (!riderUnit.object) {
+    return false;
+  }
+
+  const rider = riderUnit.object;
+  const enemys = getObjectsByPrototype(StructureExtension).filter(i => !i.my && i.exists);
+  const enemyCarryer = enemys
+    .filter(i => i.x >= 20 && i.x <= 80)
+    .sort((a, b) => rider.getRangeTo(a) - rider.getRangeTo(b));
+  if (enemyCarryer.length > 0) {
+    const carryer = enemyCarryer[0];
+    riderUnit.aim = { status: "findAndAttackExtension" };
+    riderUnit.object?.moveTo(carryer);
+    riderUnit.object?.attack(carryer);
+    return true;
+  }
+
+  return false;
+}
+
+function findCanSoloNearlyEnemy(riderUnit: ClassUnit) {
   if (!riderUnit.object) {
     return;
   }
@@ -153,20 +181,20 @@ function walkAndSteal(riderUnit: ClassUnit) {
         break;
 
       case "soloEnemy":
-        soloEnemy(riderUnit);
+        findCanSoloNearlyEnemy(riderUnit);
         break;
 
       case "quit":
-        findAnotherAim(riderUnit);
+        checkAim(riderUnit);
         break;
 
       default:
-        findAnotherAim(riderUnit);
+        checkAim(riderUnit);
         break;
     }
   } else {
-    findAnotherAim(riderUnit);
+    checkAim(riderUnit);
   }
 }
 
-export { walkAndSteal };
+export { checkAim };

@@ -97,7 +97,9 @@ function meleeAttacker(creep: Creep) {
       backgroundPadding: 0.03
     }
   );
-  const targets = enemyCreeps.filter(i => getRange(i, creep.initialPos) < 10).sort((a, b) => getRange(a, creep) - getRange(b, creep));
+  const targets = enemyCreeps
+    .filter(i => getRange(i, creep.initialPos) < 10)
+    .sort((a, b) => getRange(a, creep) - getRange(b, creep));
 
   if (targets.length > 0) {
     creep.moveTo(targets[0]);
