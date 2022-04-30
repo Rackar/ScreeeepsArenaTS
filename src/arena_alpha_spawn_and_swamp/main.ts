@@ -34,6 +34,7 @@ import { withdrawClosestContainer, getWildSource } from "./units/miner";
 import { checkAim } from "./units/rider";
 import { spawnList, ClassUnit, UNITS } from "./units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
+import { addAttackRangeToCreeps, addHitsLabelToCreeps } from "../utils/ui";
 
 import { getRange } from "game";
 
@@ -88,6 +89,10 @@ export function loop() {
   const doctors = getObjectsByPrototype(Creep).filter(c => c.my && c.body.some(b => b.type === "heal"));
 
   const towers = getObjectsByPrototype(StructureTower).filter(i => i.my);
+
+  // 添加战斗用UI
+  addAttackRangeToCreeps(unitList);
+  addHitsLabelToCreeps(unitList);
 
   // 建塔后发起进攻
   // if (myUnits && myUnits.length > 0) {
@@ -433,10 +438,10 @@ export function loop() {
   console.log(
     `warriors num: ${warriores.length},   doctors:${doctors.length},   archeres: ${archeres.length},   workers: ${carryers.length}. ||| base energy: ${mySpawn.store[RESOURCE_ENERGY]}, base heal: ${mySpawn.hits}`
   );
-  outputHits(warriores, "warrior");
-  outputHits(doctors, "doctor");
-  outputHits(archeres, "archer");
-  outputHits(carryers, "carryer");
+  // outputHits(warriores, "warrior");
+  // outputHits(doctors, "doctor");
+  // outputHits(archeres, "archer");
+  // outputHits(carryers, "carryer");
 }
 
 function outputHits(creeps: Creep[], name: string) {

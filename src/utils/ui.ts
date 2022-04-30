@@ -24,61 +24,90 @@ import {
   TOWER_RANGE,
   WORK
 } from "game/constants";
+
+import { ClassUnit } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
 interface CreepWithVisual extends Creep {
   hitsVisual?: Visual;
   attackRangeVisual?: Visual;
 }
-function addHitsLabelToCreeps(creeps: CreepWithVisual[]) {
-  for (const creep of creeps) {
-    if (!creep.hitsVisual) {
-      creep.hitsVisual = new Visual(10, true);
-    }
+function addHitsLabelToCreeps(creepUnits: ClassUnit[]) {
+  for (const creepUnit of creepUnits) {
+    const creep = creepUnit.object;
+    if (creep) {
+      if (!creep.exists || !creep.hits) {
+        console.log("本单位已死亡");
+        if (creepUnit.hitsVisual) {
+          creepUnit.hitsVisual.clear();
+          creepUnit.hitsVisual = undefined;
+        }
 
-    creep.hitsVisual.clear().text(
-      creep.hits.toString(),
-      { x: creep.x, y: creep.y - 0.5 }, // above the creep
-      {
-        font: "0.5",
-        opacity: 0.7,
-        backgroundColor: "#808080",
-        backgroundPadding: 0.03
+        continue;
       }
-    );
+
+      if (!creepUnit.hitsVisual) {
+        creepUnit.hitsVisual = new Visual(10, true);
+      }
+
+      creepUnit.hitsVisual.clear().text(
+        creep.hits.toString(),
+        { x: creep.x, y: creep.y - 0.5 }, // above the creep
+        {
+          font: "0.5",
+          opacity: 0.7,
+          backgroundColor: "#808080",
+          backgroundPadding: 0.03
+        }
+      );
+    }
   }
 }
 
-function addAttackRangeToCreeps(creeps: CreepWithVisual[]) {
-  for (const creep of creeps) {
-    let mAttack = false;
-    let rAttack = false;
-    if (!creep.attackRangeVisual) {
-      creep.attackRangeVisual = new Visual(9, true);
-    } else {
-      creep.attackRangeVisual?.clear();
-    }
+function addAttackRangeToCreeps(creepUNits: ClassUnit[]) {
+  for (const creepUnit of creepUNits) {
+    const creep = creepUnit.object;
+    if (creep) {
+      let mAttack = false;
+      let rAttack = false;
+      if (!creep.exists || !creep.hits) {
+        if (creepUnit.attackRangeVisual) {
+          creepUnit.attackRangeVisual.clear();
+          creepUnit.attackRangeVisual = undefined;
+        }
 
-    if (creep.body.some(i => i.type === ATTACK)) {
-      mAttack = true;
-    }
+        continue;
+      }
 
-    if (creep.body.some(i => i.type === RANGED_ATTACK)) {
-      rAttack = true;
-    }
+      if (!creepUnit.attackRangeVisual) {
+        creepUnit.attackRangeVisual = new Visual(9, true);
+      } else {
+        creepUnit.attackRangeVisual?.clear();
+      }
 
-    if (mAttack) {
-      creep.attackRangeVisual.rect({ x: creep.x - 1, y: creep.y - 1 }, 3, 3, {
-        stroke: "#ff0000",
-        opacity: 0.4,
-        lineStyle: "dashed"
-      });
-    }
+      if (creep.body.some(i => i.type === ATTACK)) {
+        mAttack = true;
+      }
 
-    if (rAttack) {
-      creep.attackRangeVisual.rect({ x: creep.x - 3, y: creep.y - 3 }, 7, 7, {
-        stroke: "#0000DD",
-        opacity: 0.3,
-        lineStyle: "dashed"
-      });
+      if (creep.body.some(i => i.type === RANGED_ATTACK)) {
+        rAttack = true;
+      }
+
+      if (mAttack) {
+        creepUnit.attackRangeVisual.rect({ x: creep.x - 1, y: creep.y - 1 }, 2, 2, {
+          stroke: "#DD0000",
+          opacity: 0.1,
+          lineStyle: "solid",
+          fill: "#AAAAAA"
+        });
+      }
+
+      if (rAttack) {
+        creepUnit.attackRangeVisual.rect({ x: creep.x - 3, y: creep.y - 3 }, 6, 6, {
+          stroke: "#0000DD",
+          opacity: 0.1,
+          lineStyle: "solid",
+          fill: "#AAAAAA"
+        });
+      }
     }
   }
 }

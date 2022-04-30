@@ -31,6 +31,12 @@ function checkAim(riderUnit: ClassUnit) {
     return;
   }
 
+  if (riderUnit.aim?.status) {
+    console.log(`rider aim: ${riderUnit.aim.status}`);
+  } else {
+    console.log("rider no aim");
+  }
+
   // 检查对方基地附近是否有驻兵
 
   const enemySpawn = getObjectsByPrototype(StructureSpawn).find(i => !i.my) as StructureSpawn;

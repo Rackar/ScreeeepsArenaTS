@@ -1,4 +1,5 @@
 import { ATTACK, BodyPartConstant, CARRY, HEAL, MOVE, RANGED_ATTACK, TOUGH, WORK } from "game/constants";
+import { Visual } from "game/visual";
 import {
   ConstructionSite,
   Creep,
@@ -80,6 +81,8 @@ class ClassUnit implements IUnit {
   public name?: string;
   public group?: string;
   public aimId?: any | null;
+  public hitsVisual?: Visual | undefined;
+  public attackRangeVisual?: Visual | undefined;
   public aim?: { obj?: StructureContainer; status: string } | null;
   public constructor(bodys: BodyPartConstant[], name?: string, group?: string, repeat?: boolean) {
     // 构造函数
