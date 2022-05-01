@@ -34,7 +34,7 @@ import { withdrawClosestContainer, getWildSource } from "./units/miner";
 import { checkAim } from "./units/rider";
 import { spawnList, ClassUnit, UNITS } from "./units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
-import { addAttackRangeToCreeps, addHitsLabelToCreeps } from "../utils/ui";
+import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../utils/ui";
 
 import { getRange } from "game";
 
@@ -70,6 +70,10 @@ const unitList: ClassUnit[] = [
 ];
 
 export function loop() {
+  if (getTicks() === 1) {
+    initMapRoad();
+  }
+
   // const crs = getObjectsByPrototype(Creep);
   // Your code goes here
   const mySpawn = getObjectsByPrototype(StructureSpawn).find(c => c.my) as StructureSpawn;

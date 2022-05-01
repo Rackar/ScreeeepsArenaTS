@@ -1,4 +1,11 @@
-import { createConstructionSite, findClosestByPath, getObjectsByPrototype, getTicks, getObjectById } from "game/utils";
+import {
+  createConstructionSite,
+  findClosestByPath,
+  getObjectsByPrototype,
+  getTicks,
+  getObjectById,
+  findClosestByRange
+} from "game/utils";
 import { ConstructionSite, Creep, Source, StructureContainer, StructureSpawn, StructureTower } from "game/prototypes";
 import {
   ATTACK,
@@ -18,21 +25,22 @@ import { ScoreCollector, RESOURCE_SCORE } from "arena";
 import { withdrawClosestContainer } from "../arena_alpha_spawn_and_swamp/units/miner";
 import { spawnList, ClassUnit, UNITS } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
+import { doPullAndWork } from "../utils/train";
 
 let attacker: Creep | undefined;
 
 const unitList: ClassUnit[] = [
-  new ClassUnit(UNITS.smallWorker, "energyCarryer"),
-  new ClassUnit(UNITS.smallWorker, "energyCarryer"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer", "cay1", true),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
-
+  new ClassUnit(UNITS.smallCarryer, "puller"),
+  new ClassUnit(UNITS.carryCreep, "carryCreep"),
+  new ClassUnit(UNITS.carryCreep, "carryCreep"),
   new ClassUnit(UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
+  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
+  new ClassUnit(UNITS.fastCarryer, "scoreCarryer", "cay1"),
+  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
+  new ClassUnit(UNITS.smallArcher, "rider"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "raG1", true),
 
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
   new ClassUnit(UNITS.smallArcher, "smallArcher")
 ];
 
@@ -56,24 +64,27 @@ export function loop(): void {
   const towers = getObjectsByPrototype(StructureTower).filter(i => i.my);
 
   spawnList(mySpawn, unitList);
-  const workers = unitList.filter(u => u.name === "energyCarryer");
-  for (const workerUnit of workers) {
-    if (workerUnit && workerUnit.object && workerUnit.alive) {
-      const worker = workerUnit.object;
-      const source = worker.findClosestByRange(sources);
-      if (source) {
-        if (worker.store.getFreeCapacity(RESOURCE_ENERGY)) {
-          if (worker.harvest(source) === ERR_NOT_IN_RANGE) {
-            worker.moveTo(source);
-          }
-        } else {
-          if (worker.transfer(mySpawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-            worker.moveTo(mySpawn);
-          }
-        }
-      }
-    }
-  }
+  const workers = unitList.filter(e => e.name === "carryCreep" || e.name === "puller");
+
+  doPullAndWork(workers, findClosestByRange(mySpawn, sources), mySpawn);
+  // const workers = unitList.filter(u => u.name === "energyCarryer");
+  // for (const workerUnit of workers) {
+  //   if (workerUnit && workerUnit.object && workerUnit.alive) {
+  //     const worker = workerUnit.object;
+  //     const source = worker.findClosestByRange(sources);
+  //     if (source) {
+  //       if (worker.store.getFreeCapacity(RESOURCE_ENERGY)) {
+  //         if (worker.harvest(source) === ERR_NOT_IN_RANGE) {
+  //           worker.moveTo(source);
+  //         }
+  //       } else {
+  //         if (worker.transfer(mySpawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+  //           worker.moveTo(mySpawn);
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   const carryers = unitList.filter(u => u.name === "scoreCarryer");
   for (const carryerUnit of carryers) {

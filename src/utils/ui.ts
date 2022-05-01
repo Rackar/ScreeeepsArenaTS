@@ -112,8 +112,14 @@ function addAttackRangeToCreeps(creepUNits: ClassUnit[]) {
   }
 }
 
-function initMapRoad() {
+/**
+ * @description: 创建一个地图损失数组
+ *
+ */
+
+function initMapRoad(): void {
   const costs = new CostMatrix();
+  console.log(costs.serialize());
 }
 
-export { addHitsLabelToCreeps, addAttackRangeToCreeps };
+export { addHitsLabelToCreeps, addAttackRangeToCreeps, initMapRoad };

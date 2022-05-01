@@ -14,6 +14,7 @@ import {
 const UNITS = {
   smallCarryer: [MOVE, CARRY],
   smallWorker: [MOVE, WORK, CARRY],
+  carryCreep: [WORK, WORK, WORK, CARRY],
 
   fastCarryer: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
   footMan: [MOVE, MOVE, ATTACK, ATTACK, MOVE, ATTACK],
@@ -72,6 +73,7 @@ interface IUnit {
   object?: Creep | null;
   alive?: boolean;
   name?: string;
+  spawned?: boolean;
   // isAlive: function (string):boolean ;
 }
 class ClassUnit implements IUnit {
@@ -83,6 +85,8 @@ class ClassUnit implements IUnit {
   public aimId?: any | null;
   public hitsVisual?: Visual | undefined;
   public attackRangeVisual?: Visual | undefined;
+  public posDone?: boolean;
+  public init: boolean;
   public aim?: { obj?: StructureContainer; status: string } | null;
   public constructor(bodys: BodyPartConstant[], name?: string, group?: string, repeat?: boolean) {
     // 构造函数
@@ -90,6 +94,7 @@ class ClassUnit implements IUnit {
     this.name = name;
     this.group = group;
     this.repeat = repeat || false;
+    this.init = false;
   }
 
   public get alive(): boolean {
@@ -99,6 +104,34 @@ class ClassUnit implements IUnit {
       return false;
     }
   }
+
+  public get spawned(): boolean {
+    if (!this.init && this.object && checkSpawnedPos(this.object.x, this.object.y)) {
+      this.init = true;
+      return true;
+    } else if (this.init) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+function checkSpawnedPos(x: number, y: number): boolean {
+  // cnc出生点预设值
+  if (!x && !y) {
+    return false;
+  }
+
+  if (x === 4 && y === 3) {
+    return false;
+  }
+
+  if (x === 4 && y === 95) {
+    return false;
+  }
+
+  return true;
 }
 
 function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
