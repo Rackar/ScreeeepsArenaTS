@@ -9,6 +9,7 @@ import {
   GameObject,
   Structure
 } from "game/prototypes";
+import { Visual } from "game/visual";
 
 // use when test cost
 // const [MOVE, WORK, CARRY, ATTACK, RANGED_ATTACK, HEAL, TOUGH] = ['MOVE', 'WORK', 'CARRY', 'ATTACK', 'RANGED_ATTACK', 'HEAL', 'TOUGH']
@@ -139,6 +140,7 @@ class ClassUnit implements IUnit {
   public name?: string;
   public group?: string;
   public aimId?: any | null;
+  public vis?: Visual;
   public aim?: { obj?: StructureContainer; status: string } | null;
   public constructor(bodys: BodyPartConstant[], name?: string, group?: string, repeat?: boolean) {
     // 构造函数
