@@ -74,7 +74,9 @@ function resetCarryCreep(carryCreep: Creep, homePos: Pos) {
   }
 }
 
-// 搬运工要持续运输
+/**
+ * 搬运工要持续运输
+ */
 const carryCreepWork = (carryCreep: Creep, mySpawn: StructureSpawn) => {
   carryCreep.transfer(mySpawn, RESOURCE_ENERGY);
 };
