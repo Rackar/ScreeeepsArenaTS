@@ -87,7 +87,7 @@ class ClassUnit implements IUnit {
   public attackRangeVisual?: Visual | undefined;
   public posDone?: boolean;
   public init: boolean;
-  public aim?: { obj?: StructureContainer; status: string } | null;
+  public aim?: { obj?: StructureContainer | Source; status: string } | null;
   public constructor(bodys: BodyPartConstant[], name?: string, group?: string, repeat?: boolean) {
     // 构造函数
     this.bodys = bodys;

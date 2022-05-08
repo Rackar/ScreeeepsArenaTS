@@ -1,4 +1,11 @@
-import { createConstructionSite, findClosestByPath, getObjectsByPrototype, getTicks, getObjectById } from "game/utils";
+import {
+  createConstructionSite,
+  findClosestByPath,
+  getObjectsByPrototype,
+  getTicks,
+  findPath,
+  getObjectById
+} from "game/utils";
 import {
   ConstructionSite,
   Creep,
@@ -23,7 +30,7 @@ import {
   WORK
 } from "game/constants";
 
-import { spawnList, ClassUnit } from "./spawnUnit";
+import { spawnList, ClassUnit } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
 
 const pickedContainerIds: string[] = [];
 
@@ -42,24 +49,20 @@ function withdrawClosestContainer(miner: Creep, containers: StructureContainer[]
   }
 }
 
-function findAnotherWildSource(worker: ClassUnit, sources: StructureContainer[], mySpawn: StructureSpawn) {
+function findAnotherWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureSpawn | undefined) {
   const workerObj = worker.object;
   if (!workerObj) {
     return;
   }
 
-  const allSources = getObjectsByPrototype(StructureContainer);
+  const allSources = getObjectsByPrototype(Source);
   const sortedSources = allSources.sort((a, b) => {
-    return mySpawn.getRangeTo(a) - mySpawn.getRangeTo(b);
+    return findPath(workerObj, a).length - findPath(workerObj, b).length;
   });
-  if (sortedSources.length > 6) {
+  if (sortedSources.length) {
     // 野外资源已存在 优先
     // console.log("野外资源选择的id", pickedContainerIds);
-    const wildSources = sortedSources
-      .slice(0, -3)
-      .slice(3)
-
-      .filter(s => s.store[RESOURCE_ENERGY] > 0 && pickedContainerIds.indexOf(s.id) === -1);
+    const wildSources = sortedSources.filter(s => s.energy > 0 && pickedContainerIds.indexOf(s.id) === -1);
     if (wildSources && wildSources.length) {
       const source = wildSources[0];
       pickedContainerIds.push(source.id);
@@ -70,10 +73,10 @@ function findAnotherWildSource(worker: ClassUnit, sources: StructureContainer[],
       };
       getWildSource(worker, sources, mySpawn);
     } else {
-      withdrawClosestContainer(workerObj, sources, mySpawn);
+      // withdrawClosestContainer(workerObj, sources, mySpawn);
     }
   } else {
-    withdrawClosestContainer(workerObj, sources, mySpawn);
+    // withdrawClosestContainer(workerObj, sources, mySpawn);
   }
 }
 
@@ -84,10 +87,10 @@ function checkAimSourceAndMove(worker: ClassUnit) {
   }
 
   if (worker.aim.obj) {
-    const aim = worker.aim.obj as StructureContainer;
-    if (worker.aim.obj.exists && aim.store[RESOURCE_ENERGY] > 0) {
+    const aim = worker.aim.obj as Source;
+    if (worker.aim.obj.exists && aim.energy > 0) {
       workerObj.moveTo(worker.aim.obj);
-      workerObj.withdraw(aim, RESOURCE_ENERGY);
+      workerObj.harvest(aim);
       if (workerObj.getRangeTo(worker.aim.obj) === 1 || workerObj.getRangeTo(worker.aim.obj) === 0) {
         worker.aim.status = "harvesting";
       }
@@ -106,11 +109,11 @@ function checkAimSourceAndHarvest(worker: ClassUnit) {
   }
 
   if (worker.aim.obj) {
-    const aim = worker.aim.obj as StructureContainer;
-    if (worker.aim.obj.exists && aim.store[RESOURCE_ENERGY] > 0) {
-      workerObj.withdraw(aim, RESOURCE_ENERGY);
+    const aim = worker.aim.obj as Source;
+    if (worker.aim.obj.exists && aim.energy > 0) {
+      workerObj.harvest(aim);
       workerObj.drop(RESOURCE_ENERGY);
-      if (aim.store[RESOURCE_ENERGY] === 0) {
+      if (aim.energy === 0) {
         // worker.aim.obj = undefined;
         worker.aim.status = "preBuild";
       }
@@ -133,13 +136,13 @@ function extensionPreBuild(worker: ClassUnit) {
   }
 
   // 有可能容器提前消失，按比例减少ext的数量。最多3个
-  let countLimit = 3;
-  const resources = getObjectsByPrototype(Resource);
-  const target = workerObj.findClosestByRange(resources);
-  if (target && workerObj.getRangeTo(target) <= 1) {
-    const { amount } = target;
-    countLimit = Math.round(amount / 500);
-  }
+  const countLimit = 1;
+  // const resources = getObjectsByPrototype(Resource);
+  // const target = workerObj.findClosestByRange(resources);
+  // if (target && workerObj.getRangeTo(target) <= 1) {
+  //   const { amount } = target;
+  //   // countLimit = Math.round(amount / 500);
+  // }
 
   const { x, y } = workerObj;
   // console.log(x, y);
@@ -157,7 +160,7 @@ function extensionPreBuild(worker: ClassUnit) {
         }
 
         count++;
-        const info = createConstructionSite({ x: x + i, y: y + j }, StructureExtension);
+        const info = createConstructionSite({ x: x + i, y: y + j }, StructureSpawn);
         if (info.error) {
           count--;
         }
@@ -182,11 +185,11 @@ function PickupSourceAndBuild(worker: ClassUnit) {
   }
 
   // 如果有空的扩展，就放资源进去
-  const extension = getObjectsByPrototype(StructureExtension).find(i => {
+  const spawn = getObjectsByPrototype(StructureSpawn).find(i => {
     return i.store[RESOURCE_ENERGY] < 100 && workerObj.getRangeTo(i) === 1;
   });
-  if (extension) {
-    workerObj.transfer(extension, RESOURCE_ENERGY);
+  if (spawn) {
+    workerObj.transfer(spawn, RESOURCE_ENERGY);
   }
 
   // 如果有能建造的，则建造
@@ -203,17 +206,17 @@ function PickupSourceAndBuild(worker: ClassUnit) {
   // todo
 }
 
-function getWildSource(worker: ClassUnit, sources: StructureContainer[], mySpawn: StructureSpawn): void {
+function getWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureSpawn | undefined): void {
   const workerObj = worker.object;
   if (!workerObj) {
     return;
   }
 
-  if (workerObj.getRangeTo(mySpawn) <= 1) {
+  if (mySpawn && workerObj.getRangeTo(mySpawn) <= 1) {
     workerObj.transfer(mySpawn, RESOURCE_ENERGY);
   }
 
-  // console.log(worker);
+  console.log(worker);
 
   if (worker.aim) {
     switch (worker.aim.status) {

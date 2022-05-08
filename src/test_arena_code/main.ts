@@ -117,9 +117,6 @@ export function loop() {
 
   spawnList(mySpawn, unitList);
 
-
-
-
   // 采集工人行为
   for (let i = 0; i < carryers.length; i++) {
     const miner = carryers[i];
