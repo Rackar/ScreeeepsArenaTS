@@ -39,13 +39,15 @@ function checkAim(riderUnit: ClassUnit) {
 
   // 检查对方基地附近是否有驻兵
 
-  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(i => !i.my) as StructureSpawn;
+  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(i => !i.my);
 
-  const mayWin = checkDenfenseOfEnemySpawn(enemySpawn);
-  if (mayWin) {
-    riderUnit.aim = { status: "rushBase" };
-    rushToBase(riderUnit);
-    return;
+  if (enemySpawn) {
+    const mayWin = checkDenfenseOfEnemySpawn(enemySpawn);
+    if (mayWin) {
+      riderUnit.aim = { status: "rushBase" };
+      rushToBase(riderUnit);
+      return;
+    }
   }
 
   // 单挑近距离敌人

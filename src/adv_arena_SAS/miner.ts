@@ -20,6 +20,7 @@ import {
   ATTACK,
   CARRY,
   ERR_NOT_IN_RANGE,
+  ERR_NOT_ENOUGH_ENERGY,
   HEAL,
   MOVE,
   OK,
@@ -49,6 +50,21 @@ function withdrawClosestContainer(miner: Creep, containers: StructureContainer[]
   }
 }
 
+function withdrawClosestSource(miner: Creep, sources: Source[], mySpawn: StructureSpawn): void {
+  // 工人从资源收集能量
+  const source = miner.findClosestByPath(sources);
+  if (miner.store.getFreeCapacity(RESOURCE_ENERGY) && source) {
+    const info = miner.harvest(source);
+    if (info === ERR_NOT_IN_RANGE) {
+      miner.moveTo(source);
+    }
+  } else {
+    if (miner.transfer(mySpawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      miner.moveTo(mySpawn);
+    }
+  }
+}
+
 function findAnotherWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureSpawn | undefined) {
   const workerObj = worker.object;
   if (!workerObj) {
@@ -65,7 +81,7 @@ function findAnotherWildSource(worker: ClassUnit, sources: Source[], mySpawn: St
     const wildSources = sortedSources.filter(s => s.energy > 0 && pickedContainerIds.indexOf(s.id) === -1);
     if (wildSources && wildSources.length) {
       const source = wildSources[0];
-      pickedContainerIds.push(source.id);
+      // pickedContainerIds.push(source.id);
       console.log(`准备采野外资源`);
       worker.aim = {
         obj: source,
@@ -92,7 +108,7 @@ function checkAimSourceAndMove(worker: ClassUnit) {
       workerObj.moveTo(worker.aim.obj);
       workerObj.harvest(aim);
       if (workerObj.getRangeTo(worker.aim.obj) === 1 || workerObj.getRangeTo(worker.aim.obj) === 0) {
-        worker.aim.status = "harvesting";
+        worker.aim.status = "preBuild";
       }
     } else {
       worker.aim.status = "quit";
@@ -175,22 +191,13 @@ function PickupSourceAndBuild(worker: ClassUnit) {
     return;
   }
 
-  // 资源没捡完就捡资源
-  const resources = getObjectsByPrototype(Resource);
-  const target = workerObj.findClosestByRange(resources);
-  if (target && workerObj.getRangeTo(target) <= 1) {
-    workerObj.pickup(target);
-  } else {
-    worker.aim.status = "quit";
-  }
-
-  // 如果有空的扩展，就放资源进去
-  const spawn = getObjectsByPrototype(StructureSpawn).find(i => {
-    return i.store[RESOURCE_ENERGY] < 100 && workerObj.getRangeTo(i) === 1;
-  });
-  if (spawn) {
-    workerObj.transfer(spawn, RESOURCE_ENERGY);
-  }
+  // // 如果有空的扩展，就放资源进去
+  // const spawn = getObjectsByPrototype(StructureSpawn).find(i => {
+  //   return i.store[RESOURCE_ENERGY] < 100 && workerObj.getRangeTo(i) === 1;
+  // });
+  // if (spawn) {
+  //   workerObj.transfer(spawn, RESOURCE_ENERGY);
+  // }
 
   // 如果有能建造的，则建造
   const sites = getObjectsByPrototype(ConstructionSite)
@@ -199,9 +206,20 @@ function PickupSourceAndBuild(worker: ClassUnit) {
       return b.progress - a.progress;
     });
   if (sites.length) {
-    workerObj.build(sites[0]);
+    const aim = worker.aim.obj as Source;
+    if (aim && workerObj.store.getCapacity()) {
+      if (workerObj.store[RESOURCE_ENERGY] < (workerObj.store.getCapacity() as number) - 6) {
+        workerObj.harvest(aim);
+      } else {
+        workerObj.build(sites[0]);
+      }
+    }
   }
 
+  const mySpawn = getObjectsByPrototype(StructureSpawn).find(c => c.my);
+  if (mySpawn) {
+    worker.aim.status = "quit";
+  }
   // 如果资源不多，扩展和身上满了，基地又差太多资源，则放弃换下一家。
   // todo
 }
@@ -233,7 +251,10 @@ function getWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureS
         PickupSourceAndBuild(worker);
         break;
       case "quit":
-        findAnotherWildSource(worker, sources, mySpawn);
+        if (worker.object && mySpawn) {
+          withdrawClosestSource(worker.object, sources, mySpawn);
+        }
+
         break;
 
       default:
@@ -241,8 +262,14 @@ function getWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureS
         break;
     }
   } else {
-    findAnotherWildSource(worker, sources, mySpawn);
+    if (mySpawn) {
+      if (worker.object && mySpawn) {
+        withdrawClosestSource(worker.object, sources, mySpawn);
+      }
+    } else {
+      findAnotherWildSource(worker, sources, mySpawn);
+    }
   }
 }
 
-export { withdrawClosestContainer, getWildSource };
+export { withdrawClosestContainer, getWildSource, withdrawClosestSource };

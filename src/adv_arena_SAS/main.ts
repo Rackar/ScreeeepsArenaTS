@@ -30,7 +30,7 @@ import {
   WORK
 } from "game/constants";
 
-import { withdrawClosestContainer, getWildSource } from "./miner";
+import { withdrawClosestSource, getWildSource } from "./miner";
 import { checkAim } from "../arena_alpha_spawn_and_swamp/units/rider";
 import { spawnList, ClassUnit, UNITS } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
@@ -51,17 +51,18 @@ let totalKilled = 0;
 let lastEnemyNumber = 0;
 
 const unitList: ClassUnit[] = [
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 2c2w 460tick出动
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 3c2w 340tick出动 刚好用尽资源
-  // new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
   new ClassUnit(UNITS.smallWorker, "smallWorker"),
-  new ClassUnit(UNITS.rider, "rider"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.smallWorker, "smallWorker"), // 2c2w 460tick出动
+  // new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 3c2w 340tick出动 刚好用尽资源
+  // new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
+  // new ClassUnit(UNITS.smallWorker, "smallWorker"),
+
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(UNITS.smallHealer, "smallHealer", "atk1"),
+  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(UNITS.rider, "rider"),
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
@@ -80,13 +81,13 @@ export function loop() {
   // Your code goes here
   const mySpawn = getObjectsByPrototype(StructureSpawn).find(c => c.my);
   const trueSources = getObjectsByPrototype(Source).filter(s => s.energy > 0);
-  const sources = getObjectsByPrototype(StructureContainer).filter(s => s.store[RESOURCE_ENERGY] > 0);
+  // const sources = getObjectsByPrototype(StructureContainer).filter(s => s.store[RESOURCE_ENERGY] > 0);
 
   const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
 
   const enermySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my);
   const carryers = getObjectsByPrototype(Creep).filter(
-    c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type !== "work")
+    c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type === "work")
   );
 
   const myUnits = getObjectsByPrototype(Creep).filter(c => c.my);
@@ -108,6 +109,8 @@ export function loop() {
     }
 
     return;
+  } else if (workerUnit.object) {
+    withdrawClosestSource(workerUnit.object, trueSources, mySpawn);
   }
 
   // 添加战斗用UI
@@ -119,7 +122,7 @@ export function loop() {
   //     startAttack = true
   // }
   // 弓箭和治疗有数量后开始进攻
-  if (archeres && archeres.length > 7 && doctors && doctors.length > 1 && startAttack === false) {
+  if (archeres && archeres.length >= 4 && doctors && doctors.length >= 1 && startAttack === false) {
     if (startAtkDelay === -1) {
       startAtkDelay = getTicks();
     } else if (getTicks() - startAtkDelay >= 30) {
@@ -176,8 +179,8 @@ export function loop() {
       }
 
       if (!miner.store[RESOURCE_ENERGY]) {
-        const source = miner.findClosestByPath(sources);
-        if (source && miner.withdraw(source, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        const source = miner.findClosestByPath(trueSources);
+        if (source && miner.harvest(source) === ERR_NOT_IN_RANGE) {
           miner.moveTo(source);
         }
       } else {
@@ -190,7 +193,7 @@ export function loop() {
             console.log(x, y);
             createConstructionSite({ x, y: y + 2 }, StructureTower);
           } else {
-            withdrawClosestContainer(miner, sources, mySpawn);
+            withdrawClosestSource(miner, trueSources, mySpawn);
           }
         } else {
           if (miner.build(constructionSite) === ERR_NOT_IN_RANGE) {
@@ -220,7 +223,7 @@ export function loop() {
         }
       }
 
-      withdrawClosestContainer(miner, sources, mySpawn);
+      withdrawClosestSource(miner, trueSources, mySpawn);
     }
   }
 
@@ -306,11 +309,16 @@ export function loop() {
         }
       }
 
+      let { x, y } = mySpawn;
+      // 避开地图边缘
+      x = x < 10 ? 10 : x > 90 ? 90 : x;
+      y = y < 10 ? 10 : y > 90 ? 90 : y;
+
       // 否则，分两批集结
       if (i % 2 === 0) {
-        archer.moveTo({ x: mySpawn.x - 4, y: mySpawn.y - 4 });
+        archer.moveTo({ x: x - 4, y: y - 4 });
       } else {
-        archer.moveTo({ x: mySpawn.x + 4, y: mySpawn.y + 4 });
+        archer.moveTo({ x: x + 4, y: y + 4 });
       }
     } else {
       if (enermys && enermys.length) {
