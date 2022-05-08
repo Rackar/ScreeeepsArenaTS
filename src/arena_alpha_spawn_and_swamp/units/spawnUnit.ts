@@ -88,6 +88,7 @@ class ClassUnit implements IUnit {
   public posDone?: boolean;
   public init: boolean;
   public aim?: { obj?: StructureContainer | Source; status: string } | null;
+  public vis?: Visual;
   public constructor(bodys: BodyPartConstant[], name?: string, group?: string, repeat?: boolean) {
     // 构造函数
     this.bodys = bodys;

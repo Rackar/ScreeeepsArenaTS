@@ -38,6 +38,7 @@ import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../ut
 
 import { getRange } from "game";
 
+import { addPeopleUi } from "../utils/uiCreep";
 // 本版本ok
 // 坑1 Spawn初始化store为500，然后tick1变为300
 // 坑2 spawnCreep需要花费时间，所以不能按照不存在为判断条件来反复执行，只能以存在的else
@@ -131,6 +132,7 @@ export function loop() {
     if (worker && worker.object && worker.alive) {
       // const workerObj = worker.object;
       getWildSource(worker, sources, mySpawn);
+      addPeopleUi(worker);
     }
   }
 
@@ -139,6 +141,8 @@ export function loop() {
   for (const rider of riders) {
     if (rider && rider.object && rider.alive) {
       checkAim(rider);
+      // walkAndSteal(rider);
+      addPeopleUi(rider);
     }
   }
 
