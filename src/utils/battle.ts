@@ -39,7 +39,7 @@ function remoteAttackAndRun(archer: Creep, enermy: Creep, enermys: Creep[]) {
     const range = archer.getRangeTo(enermyLow);
 
     // const rangeToEnermy = archer.getRangeTo(enermy)
-    if (range <= 4) {
+    if (range <= 3) {
       if (enermyLow.hits / enermyLow.hitsMax < 0.3 || !healer) {
         enermy = enermyLow;
         console.log(`archer id ${archer.id} to enermy lowest range: ${range}`);
@@ -55,7 +55,7 @@ function remoteAttackAndRun(archer: Creep, enermy: Creep, enermys: Creep[]) {
       // 最近有近战组件，风筝
       // 监测到掉血才后退 不浪费战力
       const range = archer.getRangeTo(closestEnermy);
-      if (archer.hits < archer.hitsMax * 0.9 && range <= 2) {
+      if (range <= 2) {
         const x = archer.x + archer.x - enermy.x;
         const y = archer.y + archer.y - enermy.y;
         archer.moveTo({ x, y });
@@ -63,7 +63,7 @@ function remoteAttackAndRun(archer: Creep, enermy: Creep, enermys: Creep[]) {
     } else if (closestEnermy && closestEnermy.body.some(b => b.type === "ranged_attack")) {
       const range = archer.getRangeTo(closestEnermy);
       // 最近有远程组件，风筝 低血量就撤
-      if (archer.hits < archer.hitsMax * 0.6 && range <= 3) {
+      if (archer.hits < archer.hitsMax * 0.7 && range <= 3) {
         const x = archer.x + archer.x - enermy.x;
         const y = archer.y + archer.y - enermy.y;
         archer.moveTo({ x, y });

@@ -35,6 +35,7 @@ import { checkAim } from "../arena_alpha_spawn_and_swamp/units/rider";
 import { spawnList, ClassUnit, UNITS } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../utils/ui";
+import { singleAttack, singleHeal } from "utils/1single/attack";
 
 import { getRange } from "game";
 
@@ -113,6 +114,12 @@ export function loop() {
     withdrawClosestSource(workerUnit.object, trueSources, mySpawn);
   }
 
+  // 给所有可能的战斗单位添加单人攻击和奶的逻辑件
+  for (const myUnit of unitList) {
+    singleAttack(myUnit, enermys);
+    singleHeal(myUnit, unitList);
+  }
+
   // 添加战斗用UI
   addAttackRangeToCreeps(unitList);
   addHitsLabelToCreeps(unitList);
@@ -158,6 +165,8 @@ export function loop() {
   for (const rider of riders) {
     if (rider && rider.object && rider.alive) {
       checkAim(rider);
+      singleAttack(rider, enermys);
+      rider.initQueues([{ flag: "moveToPosByRange", aim: { x: 50, y: 50 }, range: 5 }], "0");
     }
   }
 

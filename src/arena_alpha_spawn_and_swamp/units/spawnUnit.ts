@@ -106,6 +106,7 @@ class ClassUnit implements IUnit {
     this.group = group;
     this.repeat = repeat || false;
     this.init = false;
+    this.queueUniqueIds = [];
   }
 
   public get alive(): boolean {
@@ -128,20 +129,61 @@ class ClassUnit implements IUnit {
   }
 
   public queue = new Array<IQueueItem>();
+  private queueUniqueIds: string[];
 
   // const queue: IQueueItem[] = [];
   /**
    *将序列任务加入任务列表
    * @param item {me: Creep, flag: "moveToPosByRange" | "moveToUnitByRange", aim: Creep, range: number, stopFunction?: () => boolean}
    */
-  public importQueue(item: IQueueItem) {
+  private pushToQueue(item: IQueueItem) {
     item.me = item.me || this.object;
+    item.range = item.range || 5; // 默认范围5
+    item.stayTime = item.stayTime || 10; // 默认等待10秒
     this.queue.push(item);
+  }
+
+  /**
+   * 初始化任务列表，仅会执行一次
+   * @param items 任务列表
+   * @param uniqueId 为了仅执行一次，需要明确的指定一个唯一的id
+   */
+  public initQueues(items: IQueueItem[], uniqueId: string) {
+    if (!this.queueUniqueIds.includes(uniqueId)) {
+      if (this.queue.length === 0) {
+        // this.queue.push(...items);
+        for (const item of items) {
+          this.pushToQueue(item);
+        }
+      }
+
+      this.queueUniqueIds.push(uniqueId);
+      console.log(`添加任务成功：${uniqueId}`);
+    }
+  }
+
+  /**
+   * 删除任务列表，重新添加，仅会执行一次
+   * @param items 任务列表
+   * @param uniqueId 为了仅执行一次，需要明确的指定一个唯一的id
+   */
+  public reInitQueues(items: IQueueItem[], uniqueId: string) {
+    if (!this.queueUniqueIds.includes(uniqueId)) {
+      this.queue = [];
+      // this.queue.push(...items);
+      for (const item of items) {
+        this.pushToQueue(item);
+      }
+
+      this.queueUniqueIds.push(uniqueId);
+      console.log(`重新添加任务成功：${uniqueId}`);
+    }
   }
 
   public runQueue() {
     if (this.queue.length) {
       const item = this.queue[0];
+      console.log(`执行任务：${JSON.stringify(item)}`);
       if (item && item.flag) {
         if (item.stopFunction && item.stopFunction()) {
           this.queue.shift();
@@ -179,8 +221,9 @@ class ClassUnit implements IUnit {
 
           case "staySomeTime": {
             if (item.me && item.stayTime) {
-              if (item.stayTime <= 0) {
+              if (item.stayTime === 1) {
                 this.queue.shift();
+                this.runQueue();
               } else {
                 item.stayTime--;
               }
