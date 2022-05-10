@@ -148,6 +148,7 @@ function singleHeal(unit: ClassUnit, myUnits: ClassUnit[]): boolean {
     if (obj.body.some(b => b.type === "heal")) {
       const myCreeps = myUnits.filter(i => i.object && i.object.hits < i.object.hitsMax).map(i => i.object);
       if (myCreeps && myCreeps.length) {
+        // 如果范围为1内有友军，就治疗
         const canHealMelee = findCreepsInRange(unit, myCreeps as Creep[], ATTACK_RANGE);
         if (canHealMelee && canHealMelee.length) {
           const meleeHealTarget = checkHealOrder(canHealMelee);
@@ -157,6 +158,7 @@ function singleHeal(unit: ClassUnit, myUnits: ClassUnit[]): boolean {
           }
         }
 
+        // 如果范围2-3内有友军，远程治疗
         const canHealRanged = findCreepsInRange(unit, myCreeps as Creep[], RANGED_ATTACK_RANGE);
         if (canHealRanged && canHealRanged.length) {
           const meleeHealTarget = checkHealOrder(canHealRanged);

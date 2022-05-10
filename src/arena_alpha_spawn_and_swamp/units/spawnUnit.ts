@@ -10,6 +10,7 @@ import {
   GameObject,
   Structure
 } from "game/prototypes";
+import { getRange } from "game/utils";
 
 const UNITS = {
   smallCarryer: [MOVE, CARRY],
@@ -76,6 +77,15 @@ interface IUnit {
   spawned?: boolean;
   // isAlive: function (string):boolean ;
 }
+interface IQueueItem {
+  me?: Creep | null;
+  flag: "moveToPosByRange" | "moveToUnitByRange" | "staySomeTime" | "callback" | "clearQueue";
+  aim?: Creep | { x: number; y: number };
+  range?: number;
+  stayTime?: number;
+  stopFunction?: () => boolean;
+  jobFunction?: () => void;
+}
 class ClassUnit implements IUnit {
   public bodys: BodyPartConstant[];
   public repeat?: boolean;
@@ -114,6 +124,88 @@ class ClassUnit implements IUnit {
       return true;
     } else {
       return false;
+    }
+  }
+
+  public queue = new Array<IQueueItem>();
+
+  // const queue: IQueueItem[] = [];
+  /**
+   *将序列任务加入任务列表
+   * @param item {me: Creep, flag: "moveToPosByRange" | "moveToUnitByRange", aim: Creep, range: number, stopFunction?: () => boolean}
+   */
+  public importQueue(item: IQueueItem) {
+    item.me = item.me || this.object;
+    this.queue.push(item);
+  }
+
+  public runQueue() {
+    if (this.queue.length) {
+      const item = this.queue[0];
+      if (item && item.flag) {
+        if (item.stopFunction && item.stopFunction()) {
+          this.queue.shift();
+          return;
+        }
+
+        switch (item.flag) {
+          case "moveToPosByRange": {
+            if (item.me && item.aim && item.range) {
+              const range = getRange(item.me, item.aim);
+              if (range <= item.range) {
+                this.queue.shift();
+                this.runQueue();
+              } else {
+                item.me.moveTo(item.aim);
+              }
+            }
+
+            break;
+          }
+
+          case "moveToUnitByRange": {
+            if (item.me && item.aim && item.range) {
+              const range = getRange(item.me, item.aim);
+              if (range <= item.range) {
+                this.queue.shift();
+                this.runQueue();
+              } else {
+                item.me.moveTo(item.aim);
+              }
+            }
+
+            break;
+          }
+
+          case "staySomeTime": {
+            if (item.me && item.stayTime) {
+              if (item.stayTime <= 0) {
+                this.queue.shift();
+              } else {
+                item.stayTime--;
+              }
+            }
+
+            break;
+          }
+
+          case "clearQueue": {
+            this.queue = [];
+            break;
+          }
+
+          case "callback": {
+            if (item.jobFunction) {
+              item.jobFunction();
+            }
+
+            break;
+          }
+
+          default:
+            break;
+        }
+      }
     }
   }
 }
