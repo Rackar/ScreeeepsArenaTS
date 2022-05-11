@@ -23,7 +23,7 @@ import {
   WORK
 } from "game/constants";
 
-import { spawnList, ClassUnit } from "./spawnUnit";
+import { spawnList, ClassUnit } from "../../utils/spawnUnit";
 
 function checkAim(riderUnit: ClassUnit) {
   const rider = riderUnit.object;

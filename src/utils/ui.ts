@@ -25,7 +25,7 @@ import {
   WORK
 } from "game/constants";
 
-import { ClassUnit } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
+import { ClassUnit } from "./spawnUnit";
 interface CreepWithVisual extends Creep {
   hitsVisual?: Visual;
   attackRangeVisual?: Visual;

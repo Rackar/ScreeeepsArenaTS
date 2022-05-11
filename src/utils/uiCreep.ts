@@ -2,7 +2,7 @@ import { getTicks } from "game/utils";
 
 import { Visual } from "game/visual";
 
-import { ClassUnit } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
+import { ClassUnit } from "./spawnUnit";
 
 function ticktok(value: number, wave: number, ticks = 10) {
   const time = getTicks() % ticks;

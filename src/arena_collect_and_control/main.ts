@@ -23,25 +23,25 @@ import {
 import { ScoreCollector, RESOURCE_SCORE } from "arena";
 
 import { withdrawClosestContainer } from "../arena_alpha_spawn_and_swamp/units/miner";
-import { spawnList, ClassUnit, UNITS } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
+import { spawnList, ClassUnit, DEFUALT_UNITS } from "../utils/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
 import { doPullAndWork } from "../utils/train";
 
 let attacker: Creep | undefined;
 
 const unitList: ClassUnit[] = [
-  new ClassUnit(UNITS.smallCarryer, "puller"),
-  new ClassUnit(UNITS.carryCreep, "carryCreep"),
-  new ClassUnit(UNITS.carryCreep, "carryCreep"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer", "cay1"),
-  new ClassUnit(UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(UNITS.smallArcher, "rider"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "raG1", true),
+  new ClassUnit(DEFUALT_UNITS.smallCarryer, "puller"),
+  new ClassUnit(DEFUALT_UNITS.carryCreep, "carryCreep"),
+  new ClassUnit(DEFUALT_UNITS.carryCreep, "carryCreep"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "cay1"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "rider"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "raG1", true),
 
-  new ClassUnit(UNITS.smallArcher, "smallArcher")
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher")
 ];
 
 export function loop(): void {

@@ -32,7 +32,7 @@ import {
 
 import { withdrawClosestContainer, getWildSource } from "./units/miner";
 import { checkAim } from "./units/rider";
-import { spawnList, ClassUnit, UNITS } from "./units/spawnUnit";
+import { spawnList, ClassUnit, DEFUALT_UNITS } from "../utils/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../utils/ui";
 
@@ -52,22 +52,22 @@ let totalKilled = 0;
 let lastEnemyNumber = 0;
 
 const unitList: ClassUnit[] = [
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"),
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 2c2w 460tick出动
-  new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 3c2w 340tick出动 刚好用尽资源
-  // new ClassUnit(UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
-  new ClassUnit(UNITS.smallWorker, "smallWorker"),
-  new ClassUnit(UNITS.rider, "rider"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
-  new ClassUnit(UNITS.smallHealer, "smallHealer", "atk1"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1"),
-  new ClassUnit(UNITS.smallArcher, "smallArcher", "atk1", true),
-  new ClassUnit(UNITS.smallHealer, "smallHealer", "atk1")
+  new ClassUnit(DEFUALT_UNITS.smallCarryer, "smallCarryer"),
+  new ClassUnit(DEFUALT_UNITS.smallCarryer, "smallCarryer"), // 2c2w 460tick出动
+  new ClassUnit(DEFUALT_UNITS.smallCarryer, "smallCarryer"), // 3c2w 340tick出动 刚好用尽资源
+  // new ClassUnit(DEFUALT_UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
+  new ClassUnit(DEFUALT_UNITS.smallWorker, "smallWorker"),
+  new ClassUnit(DEFUALT_UNITS.rider, "rider"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(DEFUALT_UNITS.smallHealer, "smallHealer", "atk1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1", true),
+  new ClassUnit(DEFUALT_UNITS.smallHealer, "smallHealer", "atk1")
 ];
 
 export function loop() {

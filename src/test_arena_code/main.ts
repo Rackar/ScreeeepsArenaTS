@@ -2,7 +2,7 @@ import { getObjectsByPrototype, getTicks } from "game/utils";
 import { Creep } from "game/prototypes";
 import { Flag } from "arena";
 
-import { ClassUnit } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
+import { ClassUnit } from "../utils/spawnUnit";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps } from "../utils/ui";
 import { singleAttack, singleHeal } from "../utils/1single/attack";
 

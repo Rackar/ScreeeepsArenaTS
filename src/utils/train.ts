@@ -32,7 +32,7 @@ import {
   TOWER_RANGE,
   WORK
 } from "game/constants";
-import { spawnList, ClassUnit } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
+import { spawnList, ClassUnit } from "./spawnUnit";
 
 interface Pos {
   x: number;

@@ -32,7 +32,7 @@ import {
   WORK
 } from "game/constants";
 
-import { spawnList, ClassUnit } from "../../arena_alpha_spawn_and_swamp/units/spawnUnit";
+import { spawnList, ClassUnit } from "../spawnUnit";
 
 const ATTACK_RANGE = 1;
 const RANGED_ATTACK_RANGE = 3;
@@ -47,6 +47,11 @@ function findCreepsInRange(unit: ClassUnit, creeps: Creep[], range = 1): Creep[]
   }
 }
 
+/**
+ * 找出进攻优先级
+ * @param enemys 传入敌方所有单位
+ * @returns
+ */
 function checkEnemyOrder(enemys: Creep[]) {
   if (enemys && enemys.length) {
     enemys.sort((a, b) => {
@@ -80,7 +85,7 @@ function checkEnemyStructsOrder(enemys: OwnedStructure[]) {
 }
 
 /**
- * 单人路过就摸
+ * 单人路过就摸。优先近战攻击，优先选定血最少单位
  * @param unit 本单位
  * @param enemys 传入敌方所有单位
  * @returns 如果攻击了敌人，就返回true
@@ -124,6 +129,11 @@ function singleAttack(unit: ClassUnit, enemys: Creep[]): boolean {
   return false;
 }
 
+/**
+ * 找出治疗优先级
+ * @param creeps 传入友方所有单位
+ * @returns
+ */
 function checkHealOrder(creeps: Creep[]) {
   if (creeps && creeps.length) {
     creeps.sort((a, b) => {

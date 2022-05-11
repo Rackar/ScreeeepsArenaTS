@@ -12,7 +12,14 @@ import {
 } from "game/prototypes";
 import { getRange } from "game/utils";
 
-const UNITS = {
+// 如果需要覆盖原生 Creep 接口
+declare module "game/prototypes" {
+  interface Creep {
+    importQueue?: () => void;
+  }
+}
+
+const DEFUALT_UNITS = {
   smallCarryer: [MOVE, CARRY],
   smallWorker: [MOVE, WORK, CARRY],
   carryCreep: [WORK, WORK, WORK, CARRY],
@@ -191,20 +198,7 @@ class ClassUnit implements IUnit {
         }
 
         switch (item.flag) {
-          case "moveToPosByRange": {
-            if (item.me && item.aim && item.range) {
-              const range = getRange(item.me, item.aim);
-              if (range <= item.range) {
-                this.queue.shift();
-                this.runQueue();
-              } else {
-                item.me.moveTo(item.aim);
-              }
-            }
-
-            break;
-          }
-
+          case "moveToPosByRange":
           case "moveToUnitByRange": {
             if (item.me && item.aim && item.range) {
               const range = getRange(item.me, item.aim);
@@ -289,4 +283,4 @@ function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
   }
 }
 
-export { spawnList, ClassUnit, UNITS };
+export { spawnList, ClassUnit, DEFUALT_UNITS };

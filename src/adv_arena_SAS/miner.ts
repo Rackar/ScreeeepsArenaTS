@@ -14,7 +14,8 @@ import {
   StructureExtension,
   StructureSpawn,
   StructureTower,
-  Resource
+  Resource,
+  StructureRampart
 } from "game/prototypes";
 import {
   ATTACK,
@@ -31,9 +32,14 @@ import {
   WORK
 } from "game/constants";
 
-import { spawnList, ClassUnit } from "../arena_alpha_spawn_and_swamp/units/spawnUnit";
+import { spawnList, ClassUnit } from "../utils/spawnUnit";
+import { getRange } from "game";
 
 const pickedContainerIds: string[] = [];
+const workerRangeCache = {
+  last: 100,
+  count: 0
+};
 
 function withdrawClosestContainer(miner: Creep, containers: StructureContainer[], mySpawn: StructureSpawn): void {
   // 工人从资源收集能量
@@ -145,10 +151,10 @@ function checkAimSourceAndHarvest(worker: ClassUnit) {
 
 // function getNextExtensionAim(params: string) {}
 
-function extensionPreBuild(worker: ClassUnit) {
+function extensionPreBuild(worker: ClassUnit, flag = "spawn"): boolean {
   const workerObj = worker.object;
   if (!workerObj || !worker.aim) {
-    return;
+    return false;
   }
 
   // 有可能容器提前消失，按比例减少ext的数量。最多3个
@@ -168,7 +174,7 @@ function extensionPreBuild(worker: ClassUnit) {
     for (let i = -1; i < 2; i++) {
       for (let j = -1; j < 2; j++) {
         if (count >= countLimit) {
-          return;
+          return true;
         }
 
         if (i === 0 && j === 0) {
@@ -176,13 +182,22 @@ function extensionPreBuild(worker: ClassUnit) {
         }
 
         count++;
-        const info = createConstructionSite({ x: x + i, y: y + j }, StructureSpawn);
-        if (info.error) {
-          count--;
+        if (flag === "spawn") {
+          const info = createConstructionSite({ x: x + i, y: y + j }, StructureSpawn);
+          if (info.error) {
+            count--;
+          }
+        } else if (flag === "ram") {
+          const info = createConstructionSite({ x: x + i, y: y + j }, StructureRampart);
+          if (info.error) {
+            count--;
+          }
         }
       }
     }
   }
+
+  return false;
 }
 
 function PickupSourceAndBuild(worker: ClassUnit) {
@@ -224,6 +239,39 @@ function PickupSourceAndBuild(worker: ClassUnit) {
   // todo
 }
 
+function checkTowerRush(worker: ClassUnit) {
+  const workerObj = worker.object;
+  if (!workerObj) {
+    return;
+  }
+
+  if (!worker.aim) {
+    return;
+  }
+
+  // 开造基地后检查。
+  const enermyBase = getObjectsByPrototype(StructureSpawn).find(c => !c.my);
+  const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
+  if (!enermyBase && enermys && enermys.length === 1) {
+    // 要小心可能是towerrush或者堵墙
+    const range = getRange(workerObj, enermys[0]);
+    if (range < workerRangeCache.last) {
+      workerRangeCache.last = range;
+      workerRangeCache.count++;
+    }
+
+    if (workerRangeCache.count > 5) {
+      // 警报，对方来了
+      console.log("enermy tower rush.");
+      worker.aim.status = "denfenseTowerRush";
+    }
+  }
+}
+
+function buildRamAndTank(worker: ClassUnit) {
+  extensionPreBuild(worker, "ram");
+}
+
 function getWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureSpawn | undefined): void {
   const workerObj = worker.object;
   if (!workerObj) {
@@ -248,6 +296,7 @@ function getWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureS
         extensionPreBuild(worker);
         break;
       case "building":
+        checkTowerRush(worker);
         PickupSourceAndBuild(worker);
         break;
       case "quit":
@@ -255,6 +304,8 @@ function getWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureS
           withdrawClosestSource(worker.object, sources, mySpawn);
         }
 
+        break;
+      case "denfenseTowerRush":
         break;
 
       default:
