@@ -14,63 +14,63 @@ import {
   WORK
 } from "game/constants";
 
-function remoteAttackAndRun(archer: Creep, enermy: Creep, enermys: Creep[]) {
+function remoteAttackAndRun(archer: Creep, enemy: Creep, enemys: Creep[]) {
   // 找到敌方最近的医疗兵集火
-  const enermyHealers = enermys.filter(c => c.body.some(b => b.type === "heal"));
-  const healer = archer.findClosestByRange(enermyHealers);
+  const enemyHealers = enemys.filter(c => c.body.some(b => b.type === "heal"));
+  const healer = archer.findClosestByRange(enemyHealers);
   if (healer) {
     // console.log(healer)
     const range = archer.getRangeTo(healer);
 
     if (range <= 3) {
-      enermy = healer;
-      console.log(`archer id ${archer.id} to enermy healer range: ${range}`);
+      enemy = healer;
+      console.log(`archer id ${archer.id} to enemy healer range: ${range}`);
     }
   }
 
   // 找到血量最低的敌人单位
-  const enermySortLow = enermys
+  const enemySortLow = enemys
     .filter(c => c.hits < c.hitsMax)
     .sort((a, b) => {
       return a.hits - b.hits;
     });
-  if (enermySortLow && enermySortLow.length > 0) {
-    const enermyLow = enermySortLow[0];
-    const range = archer.getRangeTo(enermyLow);
+  if (enemySortLow && enemySortLow.length > 0) {
+    const enemyLow = enemySortLow[0];
+    const range = archer.getRangeTo(enemyLow);
 
-    // const rangeToEnermy = archer.getRangeTo(enermy)
+    // const rangeToEnemy = archer.getRangeTo(enemy)
     if (range <= 3) {
-      if (enermyLow.hits / enermyLow.hitsMax < 0.3 || !healer) {
-        enermy = enermyLow;
-        console.log(`archer id ${archer.id} to enermy lowest range: ${range}`);
+      if (enemyLow.hits / enemyLow.hitsMax < 0.3 || !healer) {
+        enemy = enemyLow;
+        console.log(`archer id ${archer.id} to enemy lowest range: ${range}`);
       }
-      // console.log(`攻击敌方最低生命单位：`, enermyLow)
+      // console.log(`攻击敌方最低生命单位：`, enemyLow)
     }
   }
 
-  const info = archer.rangedAttack(enermy);
+  const info = archer.rangedAttack(enemy);
   if (info === OK) {
-    const closestEnermy = archer.findClosestByRange(enermys);
-    if (closestEnermy && closestEnermy.body.some(b => b.type === "attack")) {
+    const closestEnemy = archer.findClosestByRange(enemys);
+    if (closestEnemy && closestEnemy.body.some(b => b.type === "attack")) {
       // 最近有近战组件，风筝
       // 监测到掉血才后退 不浪费战力
-      const range = archer.getRangeTo(closestEnermy);
+      const range = archer.getRangeTo(closestEnemy);
       if (range <= 2) {
-        const x = archer.x + archer.x - enermy.x;
-        const y = archer.y + archer.y - enermy.y;
+        const x = archer.x + archer.x - enemy.x;
+        const y = archer.y + archer.y - enemy.y;
         archer.moveTo({ x, y });
       }
-    } else if (closestEnermy && closestEnermy.body.some(b => b.type === "ranged_attack")) {
-      const range = archer.getRangeTo(closestEnermy);
+    } else if (closestEnemy && closestEnemy.body.some(b => b.type === "ranged_attack")) {
+      const range = archer.getRangeTo(closestEnemy);
       // 最近有远程组件，风筝 低血量就撤
       if (archer.hits < archer.hitsMax * 0.7 && range <= 3) {
-        const x = archer.x + archer.x - enermy.x;
-        const y = archer.y + archer.y - enermy.y;
+        const x = archer.x + archer.x - enemy.x;
+        const y = archer.y + archer.y - enemy.y;
         archer.moveTo({ x, y });
       }
     }
   } else if (info === ERR_NOT_IN_RANGE) {
-    archer.moveTo(enermy);
+    archer.moveTo(enemy);
   }
 }
 

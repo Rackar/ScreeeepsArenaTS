@@ -25,6 +25,7 @@ const DEFUALT_UNITS = {
   carryCreep: [WORK, WORK, WORK, CARRY],
 
   fastCarryer: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
+  miniFootMan: [MOVE, MOVE, MOVE, ATTACK],
   footMan: [MOVE, MOVE, ATTACK, ATTACK, MOVE, ATTACK],
   rider: [MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK],
   fastTank: [
@@ -90,6 +91,9 @@ interface IQueueItem {
   aim?: Creep | { x: number; y: number };
   range?: number;
   stayTime?: number;
+  /**
+   * 为true时终止当前任务，向后执行
+   */
   stopFunction?: () => boolean;
   jobFunction?: () => void;
 }
@@ -145,7 +149,7 @@ class ClassUnit implements IUnit {
    */
   private pushToQueue(item: IQueueItem) {
     item.me = item.me || this.object;
-    item.range = item.range || 5; // 默认范围5
+    item.range = item.range === null || item.range === undefined ? 5 : item.range; // 默认范围5
     item.stayTime = item.stayTime || 10; // 默认等待10秒
     this.queue.push(item);
   }
@@ -192,6 +196,8 @@ class ClassUnit implements IUnit {
       const item = this.queue[0];
       console.log(`执行任务：${JSON.stringify(item)}`);
       if (item && item.flag) {
+        // 判断是否已满足停止条件
+        console.log(item.stopFunction);
         if (item.stopFunction && item.stopFunction()) {
           this.queue.shift();
           return;
@@ -202,7 +208,8 @@ class ClassUnit implements IUnit {
           case "moveToUnitByRange": {
             if (item.me && item.aim && item.range) {
               const range = getRange(item.me, item.aim);
-              if (range <= item.range) {
+              console.log(range, "moveToPosByRange", item);
+              if (range < item.range) {
                 this.queue.shift();
                 this.runQueue();
               } else {

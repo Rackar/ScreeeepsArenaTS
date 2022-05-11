@@ -84,9 +84,9 @@ export function loop() {
   const trueSources = getObjectsByPrototype(Source).filter(s => s.energy > 0);
   // const sources = getObjectsByPrototype(StructureContainer).filter(s => s.store[RESOURCE_ENERGY] > 0);
 
-  const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
+  const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
 
-  const enermySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my);
+  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my);
   const carryers = getObjectsByPrototype(Creep).filter(
     c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type === "work")
   );
@@ -116,7 +116,7 @@ export function loop() {
 
   // 给所有可能的战斗单位添加单人攻击和奶的逻辑件
   for (const myUnit of unitList) {
-    singleAttack(myUnit, enermys);
+    singleAttack(myUnit, enemys);
     singleHeal(myUnit, unitList);
   }
 
@@ -142,12 +142,12 @@ export function loop() {
     startAttack = true;
   }
 
-  if (enermys.length < lastEnemyNumber) {
-    totalKilled += lastEnemyNumber - enermys.length;
-    console.log(`${getTicks()} enermys:${enermys.length} killed:${totalKilled}`);
+  if (enemys.length < lastEnemyNumber) {
+    totalKilled += lastEnemyNumber - enemys.length;
+    console.log(`${getTicks()} enemys:${enemys.length} killed:${totalKilled}`);
   }
 
-  lastEnemyNumber = enermys.length;
+  lastEnemyNumber = enemys.length;
 
   spawnList(mySpawn, unitList);
 
@@ -165,7 +165,7 @@ export function loop() {
   for (const rider of riders) {
     if (rider && rider.object && rider.alive) {
       checkAim(rider);
-      singleAttack(rider, enermys);
+      singleAttack(rider, enemys);
       rider.initQueues([{ flag: "moveToPosByRange", aim: { x: 50, y: 50 }, range: 5 }], "0");
     }
   }
@@ -255,23 +255,23 @@ export function loop() {
   for (let i = 0; i < warriores.length; i++) {
     const warrior = warriores[i];
     if (i !== 0 && i % 5 === 0) {
-      if (enermySpawn && warrior.attack(enermySpawn) === ERR_NOT_IN_RANGE) {
-        warrior.moveTo(enermySpawn);
+      if (enemySpawn && warrior.attack(enemySpawn) === ERR_NOT_IN_RANGE) {
+        warrior.moveTo(enemySpawn);
       }
 
       continue;
     }
 
-    if (enermys && enermys.length) {
-      const enemy = warrior.findClosestByRange(enermys);
-      if (enemy && enermySpawn) {
+    if (enemys && enemys.length) {
+      const enemy = warrior.findClosestByRange(enemys);
+      if (enemy && enemySpawn) {
         // 如果离塔 足够近，则打塔
         const path = warrior.findPathTo(enemy);
 
-        const spawnPath = warrior.findPathTo(enermySpawn);
+        const spawnPath = warrior.findPathTo(enemySpawn);
         if (spawnPath.length < path.length) {
-          if (warrior.attack(enermySpawn) === ERR_NOT_IN_RANGE) {
-            warrior.moveTo(enermySpawn);
+          if (warrior.attack(enemySpawn) === ERR_NOT_IN_RANGE) {
+            warrior.moveTo(enemySpawn);
           }
 
           continue;
@@ -282,12 +282,12 @@ export function loop() {
         warrior.moveTo(enemy);
       }
     } else {
-      if (!enermySpawn) {
+      if (!enemySpawn) {
         continue;
       }
 
-      if (warrior.attack(enermySpawn) === ERR_NOT_IN_RANGE) {
-        warrior.moveTo(enermySpawn);
+      if (warrior.attack(enemySpawn) === ERR_NOT_IN_RANGE) {
+        warrior.moveTo(enemySpawn);
       }
     }
   }
@@ -295,7 +295,7 @@ export function loop() {
   // const center = getGroupCenter("atk1");
 
   // if (center) {
-  //   const enemy = findClosestByRange(center, enermys);
+  //   const enemy = findClosestByRange(center, enemys);
   //   if (enemy && getRange(center, enemy) <= 25 && getRange(center, enemy) >= 10) {
   //     calcGourpDistance("atk1", center);
   //   }
@@ -307,13 +307,13 @@ export function loop() {
 
     // 准备好之前不出击
     if (!startAttack) {
-      const enemy = archer.findClosestByRange(enermys);
+      const enemy = archer.findClosestByRange(enemys);
 
       if (enemy) {
         const range = archer.getRangeTo(enemy);
         if (range <= 20) {
           // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
-          remoteAttackAndRun(archer, enemy, enermys);
+          remoteAttackAndRun(archer, enemy, enemys);
           continue;
         }
       }
@@ -330,28 +330,28 @@ export function loop() {
         archer.moveTo({ x: x + 4, y: y + 4 });
       }
     } else {
-      if (enermys && enermys.length) {
-        let enermy = archer.findClosestByRange(enermys) as Creep;
+      if (enemys && enemys.length) {
+        let enemy = archer.findClosestByRange(enemys) as Creep;
         // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
 
-        let range = archer.getRangeTo(enermy);
+        let range = archer.getRangeTo(enemy);
 
         // 如果有偷塔行为，则防御偷塔
-        const thiefEnermy = mySpawn.findClosestByRange(enermys);
-        if (thiefEnermy) {
-          const thiefRange = mySpawn.getRangeTo(thiefEnermy);
-          if (thiefRange <= 40 && Math.abs(thiefEnermy.x - mySpawn.x) < 10) {
+        const thiefEnemy = mySpawn.findClosestByRange(enemys);
+        if (thiefEnemy) {
+          const thiefRange = mySpawn.getRangeTo(thiefEnemy);
+          if (thiefRange <= 40 && Math.abs(thiefEnemy.x - mySpawn.x) < 10) {
             console.log("检测到偷塔");
-            enermy = thiefEnermy;
+            enemy = thiefEnemy;
             range = thiefRange;
           }
         }
 
-        if (enermySpawn) {
-          const spawnRange = archer.getRangeTo(enermySpawn);
+        if (enemySpawn) {
+          const spawnRange = archer.getRangeTo(enemySpawn);
           if (spawnRange + 5 < range && spawnRange <= 20) {
-            if (archer.rangedAttack(enermySpawn) === ERR_NOT_IN_RANGE) {
-              archer.moveTo(enermySpawn);
+            if (archer.rangedAttack(enemySpawn) === ERR_NOT_IN_RANGE) {
+              archer.moveTo(enemySpawn);
             }
 
             continue;
@@ -359,10 +359,10 @@ export function loop() {
         }
         // 如果离塔 足够近，则打塔
 
-        remoteAttackAndRun(archer, enermy, enermys);
+        remoteAttackAndRun(archer, enemy, enemys);
       } else {
-        if (enermySpawn && archer.rangedAttack(enermySpawn) === ERR_NOT_IN_RANGE) {
-          archer.moveTo(enermySpawn);
+        if (enemySpawn && archer.rangedAttack(enemySpawn) === ERR_NOT_IN_RANGE) {
+          archer.moveTo(enemySpawn);
         }
       }
     }
@@ -449,16 +449,16 @@ export function loop() {
 
     // 如果自己受伤并离敌人过近，则远离敌军
     if (doctor.hits < doctor.hitsMax) {
-      const enermy = doctor.findClosestByRange(enermys);
-      if (!enermy) {
+      const enemy = doctor.findClosestByRange(enemys);
+      if (!enemy) {
         continue;
       }
 
-      const path = doctor.findPathTo(enermy);
-      if (enermy.body.some(b => b.type === "attack" || b.type === "ranged_attack") && path.length <= 6) {
+      const path = doctor.findPathTo(enemy);
+      if (enemy.body.some(b => b.type === "attack" || b.type === "ranged_attack") && path.length <= 6) {
         // 有敌方攻击单位，风筝
-        const x = doctor.x + doctor.x - enermy.x;
-        const y = doctor.y + doctor.y - enermy.y;
+        const x = doctor.x + doctor.x - enemy.x;
+        const y = doctor.y + doctor.y - enemy.y;
         doctor.moveTo({ x, y });
       }
     }

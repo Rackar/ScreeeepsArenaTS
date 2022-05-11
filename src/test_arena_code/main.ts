@@ -9,8 +9,8 @@ import { singleAttack, singleHeal } from "../utils/1single/attack";
 const unitList: ClassUnit[] = [];
 
 export function loop() {
-  const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
-  const enermyFlag = getObjectsByPrototype(Flag).find(c => !c.my);
+  const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
+  const enemyFlag = getObjectsByPrototype(Flag).find(c => !c.my);
   const myUnits = getObjectsByPrototype(Creep).filter(c => c.my);
 
   if (getTicks() === 1) {
@@ -27,7 +27,7 @@ export function loop() {
 
   for (const myUnit of unitList) {
     // 给所有可能的战斗单位添加单人攻击和奶的逻辑件
-    singleAttack(myUnit, enermys);
+    singleAttack(myUnit, enemys);
     singleHeal(myUnit, unitList);
 
     // 添加任务序列
@@ -45,9 +45,9 @@ export function loop() {
           jobFunction: () => {
             const obj = myUnit.object;
             if (obj) {
-              // const enermy = findClosestByRange(obj, enermys);
-              if (enermyFlag) {
-                obj.moveTo(enermyFlag);
+              // const enemy = findClosestByRange(obj, enemys);
+              if (enemyFlag) {
+                obj.moveTo(enemyFlag);
               }
             }
 

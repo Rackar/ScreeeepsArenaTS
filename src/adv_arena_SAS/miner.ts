@@ -250,11 +250,11 @@ function checkTowerRush(worker: ClassUnit) {
   }
 
   // 开造基地后检查。
-  const enermyBase = getObjectsByPrototype(StructureSpawn).find(c => !c.my);
-  const enermys = getObjectsByPrototype(Creep).filter(c => !c.my);
-  if (!enermyBase && enermys && enermys.length === 1) {
+  const enemyBase = getObjectsByPrototype(StructureSpawn).find(c => !c.my);
+  const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
+  if (!enemyBase && enemys && enemys.length === 1) {
     // 要小心可能是towerrush或者堵墙
-    const range = getRange(workerObj, enermys[0]);
+    const range = getRange(workerObj, enemys[0]);
     if (range < workerRangeCache.last) {
       workerRangeCache.last = range;
       workerRangeCache.count++;
@@ -262,7 +262,7 @@ function checkTowerRush(worker: ClassUnit) {
 
     if (workerRangeCache.count > 5) {
       // 警报，对方来了
-      console.log("enermy tower rush.");
+      console.log("enemy tower rush.");
       worker.aim.status = "denfenseTowerRush";
     }
   }
