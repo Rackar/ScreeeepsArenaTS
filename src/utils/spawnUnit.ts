@@ -253,7 +253,10 @@ class ClassUnit implements IUnit {
                   remoteAttackAndRun(me, enemys[0], enemys);
                 }
               } else {
-                me.moveTo(aim);
+                const x = aim.x < 50 ? aim.x + 2 : aim.x - 2;
+                const y = aim.y < 50 ? aim.y + 2 : aim.y - 2;
+                // 集结到aim会堵塞，放在2格外
+                me.moveTo({ x, y });
               }
 
               if (stayInRampart) {

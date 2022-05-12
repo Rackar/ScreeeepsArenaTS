@@ -61,7 +61,10 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.smallHealer, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
+  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfMysideSource"),
+  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfEnemysideSource"),
   new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
+  // new ClassUnit(DEFUALT_UNITS.workCreepMove, "workCreepMove"),// 准备开分矿
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1", true),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher")
 ];
@@ -170,28 +173,6 @@ export function loop(): void {
             if (puller && puller.object) {
               puller.object.transfer(mySpawn, RESOURCE_ENERGY);
             }
-          },
-          stopFunction: () => {
-            if (mySource.energy <= 20) {
-              return true;
-            }
-
-            return false;
-          }
-        },
-        {
-          // 开始拉人去分矿
-          flag: "callback",
-          comment: "pull carryer2",
-          stopFunction: () => {
-            if (puller && puller.object && carryCreep1 && carryCreep1.object && carryCreep2 && carryCreep2.object) {
-              return (
-                pullCreepTo(puller.object, carryCreep2.object, { x: 99 - sourceOuter.x, y: sourceOuter.y }) &&
-                pullCreepTo(carryCreep2.object, carryCreep1.object, { x: 99 - sourceRight.x, y: sourceRight.y })
-              );
-            } else {
-              return false;
-            }
           }
         }
       ],
@@ -212,13 +193,6 @@ export function loop(): void {
             if (puller && puller.object) {
               worker.transfer(puller.object, RESOURCE_ENERGY);
             }
-          },
-          stopFunction: () => {
-            if (mySource.energy <= 20) {
-              return true;
-            }
-
-            return false;
           }
         }
       ],
@@ -239,13 +213,6 @@ export function loop(): void {
             if (puller && puller.object) {
               worker.transfer(puller.object, RESOURCE_ENERGY);
             }
-          },
-          stopFunction: () => {
-            if (mySource.energy <= 20) {
-              return true;
-            }
-
-            return false;
           }
         }
       ],
@@ -360,11 +327,11 @@ export function loop(): void {
             stopFunction: () => {
               const unitCount = denfeneresOfBase.filter(e => checkSpawned(e));
               if (mySpawn) {
-                console.log("防守等待进攻信号，满6进攻", unitCount.length, `防守目标${mySpawn.x},${mySpawn.y}`);
+                console.log("防守等待进攻信号,满7进攻。", unitCount.length, `防守目标${mySpawn.x},${mySpawn.y}`);
               }
 
-              if (unitCount.length >= 7) {
-                console.log("造兵完成，退出防御状态，进入下一步", unitCount.length);
+              if (unitCount.length >= 7 || getTicks() > 500) {
+                console.log("造兵完成或满足500tick,退出防御状态,进入下一步", unitCount.length);
                 return true;
               } else {
                 return false;
@@ -396,25 +363,53 @@ export function loop(): void {
     }
   }
 
-  // doPullAndWork(workers, findClosestByRange(mySpawn, sources), mySpawn);
-  // const workers = unitList.filter(u => u.name === "energyCarryer");
-  // for (const workerUnit of workers) {
-  //   if (workerUnit && workerUnit.object && workerUnit.alive) {
-  //     const worker = workerUnit.object;
-  //     const source = worker.findClosestByRange(sources);
-  //     if (source) {
-  //       if (worker.store.getFreeCapacity(RESOURCE_ENERGY)) {
-  //         if (worker.harvest(source) === ERR_NOT_IN_RANGE) {
-  //           worker.moveTo(source);
-  //         }
-  //       } else {
-  //         if (worker.transfer(mySpawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-  //           worker.moveTo(mySpawn);
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+  // 守我方分矿单位逻辑
+  const denfenerOfMysideSource = unitList.find(e => e.name === "denfenerOfMysideSource");
+
+  if (denfenerOfMysideSource && checkSpawned(denfenerOfMysideSource)) {
+    const mySecendSource = { x: 99 - mySource.x, y: mySource.y };
+
+    denfenerOfMysideSource.initQueues(
+      [
+        {
+          flag: "moveToPosByRange",
+          aim: mySecendSource,
+          range: 3
+        },
+        {
+          flag: "denfenseAimWithRange",
+          aim: mySecendSource,
+          range: 5,
+          stayInRampart: true
+        }
+      ],
+      `${denfenerOfMysideSource.name}0`
+    );
+    denfenerOfMysideSource.runQueue();
+  }
+
+  const denfenerOfEnemysideSource = unitList.find(e => e.name === "denfenerOfEnemysideSource");
+  if (denfenerOfEnemysideSource && checkSpawned(denfenerOfEnemysideSource)) {
+    const enemySecendSource = { x: 99 - mySource.x, y: enemySpawn.y };
+
+    denfenerOfEnemysideSource.initQueues(
+      [
+        {
+          flag: "moveToPosByRange",
+          aim: enemySecendSource,
+          range: 3
+        },
+        {
+          flag: "denfenseAimWithRange",
+          aim: enemySecendSource,
+          range: 5,
+          stayInRampart: true
+        }
+      ],
+      `${denfenerOfEnemysideSource.name}0`
+    );
+    denfenerOfEnemysideSource.runQueue();
+  }
 
   const carryers = unitList.filter(u => u.name === "scoreCarryer");
   for (const carryerUnit of carryers) {
@@ -436,6 +431,8 @@ export function loop(): void {
       }
     }
   }
+
+  console.log(unitList[6]);
 
   // const archeres = unitList.filter(u => u.name === "smallArcher");
 
