@@ -33,7 +33,7 @@ import {
 import { withdrawClosestSource, getWildSource } from "./miner";
 import { checkAim } from "../arena_alpha_spawn_and_swamp/units/rider";
 import { spawnList, ClassUnit, DEFUALT_UNITS } from "../utils/spawnUnit";
-import { remoteAttackAndRun } from "../utils/battle";
+import { remoteAttackAndRun, addDoctorMoveLogic } from "../utils/battle";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../utils/ui";
 import { singleAttack, singleHeal } from "utils/1single/attack";
 
@@ -52,8 +52,8 @@ let totalKilled = 0;
 let lastEnemyNumber = 0;
 
 const unitList: ClassUnit[] = [
-  new ClassUnit(DEFUALT_UNITS.smallWorker, "smallWorker"),
-  new ClassUnit(DEFUALT_UNITS.smallWorker, "smallWorker"), // 2c2w 460tick出动
+  new ClassUnit(DEFUALT_UNITS.workCreepMove, "workCreepMove"),
+  // new ClassUnit(DEFUALT_UNITS.smallWorker, "smallWorker"), // 2c2w 460tick出动
   // new ClassUnit(DEFUALT_UNITS.smallCarryer, "smallCarryer"), // 3c2w 340tick出动 刚好用尽资源
   // new ClassUnit(DEFUALT_UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
   // new ClassUnit(DEFUALT_UNITS.smallWorker, "smallWorker"),
@@ -442,42 +442,7 @@ export function loop() {
   }
 
   // 医疗兵行为
-  for (const doctor of doctors) {
-    // const doctor = doctors[i];
-    const myDamagedCreeps = getObjectsByPrototype(Creep).filter(o => o.my && o.hits < o.hitsMax);
-    const battleUnits = myUnits.filter(c => c.body.some(b => b.type === "attack" || b.type === "ranged_attack"));
-
-    // 如果自己受伤并离敌人过近，则远离敌军
-    if (doctor.hits < doctor.hitsMax) {
-      const enemy = doctor.findClosestByRange(enemys);
-      if (!enemy) {
-        continue;
-      }
-
-      const path = doctor.findPathTo(enemy);
-      if (enemy.body.some(b => b.type === "attack" || b.type === "ranged_attack") && path.length <= 6) {
-        // 有敌方攻击单位，风筝
-        const x = doctor.x + doctor.x - enemy.x;
-        const y = doctor.y + doctor.y - enemy.y;
-        doctor.moveTo({ x, y });
-      }
-    }
-
-    // 如果没有受伤的，就跟随最近的
-    if (!myDamagedCreeps || !myDamagedCreeps.length) {
-      const target = doctor.findClosestByRange(battleUnits);
-      if (target) {
-        doctor.moveTo(target);
-      }
-    } else {
-      const target = doctor.findClosestByRange(myDamagedCreeps);
-      if (target) {
-        if (doctor.heal(target) === ERR_NOT_IN_RANGE) {
-          doctor.moveTo(target);
-        }
-      }
-    }
-  }
+  addDoctorMoveLogic(doctors, myUnits, enemys);
 
   console.log(
     `warriors num: ${warriores.length},   doctors:${doctors.length},   archeres: ${archeres.length},   workers: ${carryers.length}. ||| base energy: ${mySpawn.store[RESOURCE_ENERGY]}, base heal: ${mySpawn.hits}`
@@ -486,20 +451,4 @@ export function loop() {
   // outputHits(doctors, "doctor");
   // outputHits(archeres, "archer");
   // outputHits(carryers, "carryer");
-}
-
-function outputHits(creeps: Creep[], name: string) {
-  for (const creep of creeps) {
-    // const creep = creeps[i];
-    const { hits } = creep;
-    const { hitsMax } = creep;
-    const hitsPercent = hits / hitsMax;
-    const splitNum = Math.floor(hitsPercent * 10);
-    const splitArray = new Array(10).fill("x");
-    for (let j = 0; j < splitNum; j++) {
-      splitArray[j] = "-";
-    }
-
-    console.log(` ${splitArray.join("")} ${name} ${creep.id} health`);
-  }
 }

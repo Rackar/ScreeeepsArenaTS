@@ -93,7 +93,7 @@ function checkEnemyStructsOrder(enemys: OwnedStructure[]) {
 function singleAttack(unit: ClassUnit, enemys: Creep[]): boolean {
   if (unit.object) {
     const obj = unit.object;
-    if (obj.body.some(b => b.type === "attack")) {
+    if (obj.body && obj.body.some(b => b.type === "attack")) {
       const canHitEnemys = findCreepsInRange(unit, enemys, ATTACK_RANGE);
       const nearbyEnemy = checkEnemyOrder(canHitEnemys);
       if (nearbyEnemy) {
@@ -155,7 +155,7 @@ function checkHealOrder(creeps: Creep[]) {
 function singleHeal(unit: ClassUnit, myUnits: ClassUnit[]): boolean {
   if (unit.object) {
     const obj = unit.object;
-    if (obj.body.some(b => b.type === "heal")) {
+    if (obj.body && obj.body.some(b => b.type === "heal")) {
       const myCreeps = myUnits.filter(i => i.object && i.object.hits < i.object.hitsMax).map(i => i.object);
       if (myCreeps && myCreeps.length) {
         // 如果范围为1内有友军，就治疗

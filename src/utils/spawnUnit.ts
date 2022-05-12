@@ -23,6 +23,7 @@ const DEFUALT_UNITS = {
   smallCarryer: [MOVE, CARRY],
   smallWorker: [MOVE, WORK, CARRY],
   carryCreep: [WORK, WORK, WORK, CARRY],
+  workCreepMove: [CARRY, WORK, WORK, WORK, MOVE],
 
   fastCarryer: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
   miniFootMan: [MOVE, MOVE, MOVE, ATTACK],
@@ -290,4 +291,4 @@ function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
   }
 }
 
-export { spawnList, ClassUnit, DEFUALT_UNITS };
+export { spawnList, ClassUnit, DEFUALT_UNITS, IQueueItem };

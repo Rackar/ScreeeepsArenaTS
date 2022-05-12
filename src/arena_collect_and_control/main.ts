@@ -33,9 +33,10 @@ import {
 import { ScoreCollector, RESOURCE_SCORE } from "arena";
 
 import { withdrawClosestContainer } from "../arena_alpha_spawn_and_swamp/units/miner";
-import { spawnList, ClassUnit, DEFUALT_UNITS } from "../utils/spawnUnit";
+import { spawnList, ClassUnit, DEFUALT_UNITS, IQueueItem } from "../utils/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
-import { splitCreepsInRamparts, alertInRange, pullCreepTo } from "../utils/pureHelper";
+import { splitCreepsInRamparts, alertInRange, pullCreepTo, repeatArray } from "../utils/pureHelper";
+import { singleAttack, singleHeal } from "../utils/1single/attack";
 
 let attacker: Creep | undefined;
 
@@ -94,6 +95,11 @@ export function loop(): void {
 
   // 造兵逻辑
   spawnList(mySpawn, unitList);
+  // 给所有可能的战斗单位添加单人攻击和奶的逻辑件
+  for (const myUnit of unitList) {
+    singleAttack(myUnit, enemys);
+    singleHeal(myUnit, unitList);
+  }
 
   // 火车挖矿逻辑
   if (puller && checkSpawned(puller)) {
@@ -206,28 +212,50 @@ export function loop(): void {
           aim: enemySpawn,
           range: 10
         },
-        {
-          // 驻守杀农民，如果对方出兵则撤退
-          flag: "callback",
-          jobFunction: () => {
-            if (miniFootMan && miniFootManObj) {
-              const enemyCarryersOutside = enemysInRam.filter(e => e.body && e.body.some(b => b.type === CARRY));
-              if (enemyCarryersOutside.length > 0) {
-                const aim = findClosestByRange(miniFootManObj, enemyCarryersOutside);
-                miniFootManObj.moveTo(aim);
-                miniFootManObj.attack(aim);
-                alertInRange(miniFootManObj, enemyCarryersOutside, 5);
+        ...repeatArray(
+          [
+            {
+              // 驻守杀农民，如果对方出兵则进入下一个队列
+              flag: "callback",
+              jobFunction: () => {
+                if (miniFootMan && miniFootManObj) {
+                  const enemyCarryersOutside = enemysNotInRam.filter(e => e.body && e.body.some(b => b.type === CARRY));
+                  if (enemyCarryersOutside.length > 0) {
+                    const aim = findClosestByRange(miniFootManObj, enemyCarryersOutside);
+                    miniFootManObj.moveTo(aim);
+                    miniFootManObj.attack(aim);
+                    alertInRange(miniFootManObj, enemyCarryersOutside, 5);
+                  }
+                }
+              },
+              stopFunction: () => {
+                const enemyAtksOutside = enemysNotInRam.filter(
+                  e => (e.body && e.body.some(b => b.type === ATTACK)) || e.body.some(b => b.type === RANGED_ATTACK)
+                );
+                if (enemyAtksOutside.length && miniFootManObj) {
+                  if (alertInRange(miniFootManObj, enemyAtksOutside, 5)) {
+                    console.log(`${miniFootMan.name as string} enemy nearby. run away`);
+                    return true;
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
               }
-            }
-          },
-          stopFunction: () => {
-            if (puller && puller.object && carryCreep2 && checkSpawned(carryCreep2)) {
-              return true;
-            } else {
-              return false;
-            }
-          }
-        }
+            } as IQueueItem,
+            {
+              flag: "moveToPosByRange",
+              aim: mySpawn,
+              range: 4
+            } as IQueueItem,
+            {
+              flag: "staySomeTime",
+              stayTime: 30
+            } as IQueueItem
+          ],
+          10
+        )
       ],
       "0"
     );

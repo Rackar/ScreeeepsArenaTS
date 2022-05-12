@@ -1,4 +1,11 @@
-import { createConstructionSite, findClosestByPath, getObjectsByPrototype, getTicks, getObjectById } from "game/utils";
+import {
+  createConstructionSite,
+  findClosestByPath,
+  getObjectsByPrototype,
+  getTicks,
+  getObjectById,
+  getRange
+} from "game/utils";
 import { ConstructionSite, Creep, Source, StructureContainer, StructureSpawn, StructureTower } from "game/prototypes";
 import {
   ATTACK,
@@ -74,4 +81,43 @@ function remoteAttackAndRun(archer: Creep, enemy: Creep, enemys: Creep[]) {
   }
 }
 
-export { remoteAttackAndRun };
+function addDoctorMoveLogic(doctors: Creep[], myUnits: Creep[], enemys: Creep[]) {
+  for (const doctor of doctors) {
+    // const doctor = doctors[i];
+    const myDamagedCreeps = getObjectsByPrototype(Creep).filter(o => o.my && o.hits < o.hitsMax);
+    const battleUnits = myUnits.filter(c => c.body.some(b => b.type === "attack" || b.type === "ranged_attack"));
+
+    // 如果自己受伤并离敌人过近，则远离敌军
+    if (doctor.hits < doctor.hitsMax * 0.7) {
+      const enemy = doctor.findClosestByRange(enemys);
+      if (enemy) {
+        const path = doctor.findPathTo(enemy);
+        if (enemy.body.some(b => b.type === "attack" || b.type === "ranged_attack") && path.length <= 2) {
+          // 有敌方攻击单位，风筝
+          const x = doctor.x + doctor.x - enemy.x;
+          const y = doctor.y + doctor.y - enemy.y;
+          doctor.moveTo({ x, y });
+        }
+
+        continue;
+      }
+    }
+
+    // 如果没有受伤的，就跟随最近的
+    if (!myDamagedCreeps || !myDamagedCreeps.length) {
+      const target = doctor.findClosestByRange(battleUnits);
+      if (target) {
+        doctor.moveTo(target);
+      }
+    } else {
+      const target = doctor.findClosestByRange(myDamagedCreeps);
+      if (target && getRange(doctor, target) < 15) {
+        if (doctor.heal(target) === ERR_NOT_IN_RANGE) {
+          doctor.moveTo(target);
+        }
+      }
+    }
+  }
+}
+
+export { remoteAttackAndRun, addDoctorMoveLogic };

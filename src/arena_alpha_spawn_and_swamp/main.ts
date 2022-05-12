@@ -4,6 +4,7 @@ import {
   findClosestByRange,
   getObjectsByPrototype,
   getTicks,
+  getRange,
   getObjectById
 } from "game/utils";
 import {
@@ -33,10 +34,8 @@ import {
 import { withdrawClosestContainer, getWildSource } from "./units/miner";
 import { checkAim } from "./units/rider";
 import { spawnList, ClassUnit, DEFUALT_UNITS } from "../utils/spawnUnit";
-import { remoteAttackAndRun } from "../utils/battle";
+import { remoteAttackAndRun, addDoctorMoveLogic } from "../utils/battle";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../utils/ui";
-
-import { getRange } from "game";
 
 import { addPeopleUi } from "../utils/uiCreep";
 // 本版本ok
@@ -306,7 +305,7 @@ export function loop() {
         const thiefEnemy = mySpawn.findClosestByRange(enemys);
         if (thiefEnemy) {
           const thiefRange = mySpawn.getRangeTo(thiefEnemy);
-          if (thiefRange <= 40 && Math.abs(thiefEnemy.x - mySpawn.x) < 10) {
+          if (thiefRange <= 30 && Math.abs(thiefEnemy.x - mySpawn.x) < 10) {
             console.log("检测到偷塔");
             enemy = thiefEnemy;
             range = thiefRange;
@@ -315,7 +314,7 @@ export function loop() {
 
         // 如果离塔 足够近，则打塔
         const spawnRange = archer.getRangeTo(enemySpawn);
-        if (spawnRange + 5 < range && spawnRange <= 20) {
+        if (spawnRange + 5 < range && spawnRange <= 30) {
           if (archer.rangedAttack(enemySpawn) === ERR_NOT_IN_RANGE) {
             archer.moveTo(enemySpawn);
           }
@@ -406,42 +405,7 @@ export function loop() {
   }
 
   // 医疗兵行为
-  for (const doctor of doctors) {
-    // const doctor = doctors[i];
-    const myDamagedCreeps = getObjectsByPrototype(Creep).filter(o => o.my && o.hits < o.hitsMax);
-    const battleUnits = myUnits.filter(c => c.body.some(b => b.type === "attack" || b.type === "ranged_attack"));
-
-    // 如果自己受伤并离敌人过近，则远离敌军
-    if (doctor.hits < doctor.hitsMax) {
-      const enemy = doctor.findClosestByRange(enemys);
-      if (!enemy) {
-        continue;
-      }
-
-      const path = doctor.findPathTo(enemy);
-      if (enemy.body.some(b => b.type === "attack" || b.type === "ranged_attack") && path.length <= 6) {
-        // 有敌方攻击单位，风筝
-        const x = doctor.x + doctor.x - enemy.x;
-        const y = doctor.y + doctor.y - enemy.y;
-        doctor.moveTo({ x, y });
-      }
-    }
-
-    // 如果没有受伤的，就跟随最近的
-    if (!myDamagedCreeps || !myDamagedCreeps.length) {
-      const target = doctor.findClosestByRange(battleUnits);
-      if (target) {
-        doctor.moveTo(target);
-      }
-    } else {
-      const target = doctor.findClosestByRange(myDamagedCreeps);
-      if (target) {
-        if (doctor.heal(target) === ERR_NOT_IN_RANGE) {
-          doctor.moveTo(target);
-        }
-      }
-    }
-  }
+  addDoctorMoveLogic(doctors, myUnits, enemys);
 
   console.log(
     `warriors num: ${warriores.length},   doctors:${doctors.length},   archeres: ${archeres.length},   workers: ${carryers.length}. ||| base energy: ${mySpawn.store[RESOURCE_ENERGY]}, base heal: ${mySpawn.hits}`
@@ -467,53 +431,3 @@ function outputHits(creeps: Creep[], name: string) {
     console.log(` ${splitArray.join("")} ${name} ${creep.id} health`);
   }
 }
-
-// 1.暴兵流 A4M4 H3M3
-// 2.风筝流 R3M4 H2M4
-// 3.别人的铁三角 M5A1T2*1 M5R4*2 M5H3*2
-
-//  改阵型，防御后攻。或者铁三角坦克治疗暴远程
-
-// 需要两个改进。造塔第一步总失败，貌似是地点被占用问题
-// 第二 弓兵需要hit and run
-
-// 需要新改进。提升弓箭质量，考虑第二梯队用铁三角，去除塔防；战斗中优先攻击治疗；
-// 放弃坦克，第二梯队用远程加医疗，游走消耗，同时去掉塔防.
-// 下一个优化，如果太多弓箭瞄准同一目标，则切换为其他目标
-
-// 集火治疗没生效。需要安排一个偷塔策略：
-// 对第n个弓箭手，记录下他的id编号，单独开发偷塔策略
-// 检查战局僵持，如果僵持，则偷塔
-// 检查敌人所在平均半区，是否在某个半区没有敌人的战斗单位
-// 指定空半区做为中间路点，走过去暂停
-// 检查敌人基地位置附近战斗单位数量，如果为1及以下，则直接到达基地进行偷塔
-// 路上监测是否被攻击掉血，如掉血则放弃偷塔
-
-// 战斗优化，掉血过半周围有自己人，则后撤几步再上
-// 小心被单兵引走攻击
-
-// 遇到了世界第一，记录策略。2个carryer。然后一个M5W1C1 carryer去一个Container 提取能量扔地上作为resource 然后建Extention。攻击者M15A3*2去守另一个Container。再加一个M102H医疗。
-
-// 需要偷塔监测
-// 当前问题 234行风筝容易超时。215、218、219、227行寻路容易超时。改为range遍历，提高性能
-// 治疗优先级
-
-// 对方近战原地暴兵，阵型可能会没法展开
-
-// 策略分类：地堡流，偷塔流，骚扰流，远程型，重坦近战流，快速流
-
-// 首先测试快速提矿进行extention建造，对经济的影响
-
-// 需要单独游走 消灭挖矿或者保护我方挖矿
-
-// 检测中间采矿区域是否有地方战斗单位数量小于2，检测是否有carry单位，使用最快近战单位去追击，如果被攻击则绕行
-
-// 越向下策略权重越高，覆盖前一级策略
-// 单体级策略（攻击范围内的敌人，治疗范围内的己方单位，攻击与治疗的优先级，正常逃生和集火）
-// 团队级策略（快速移动，成队形移动，猛攻，偷袭，驻守，护送，躲避）
-// 团队级阶段切换（满足什么条件切换阶段目标，目标位置或固定地点，本阶段所用策略）
-// 战略级策略切换（强制修改团队策略及阶段切换方式）
-// 单体级特殊阶段切换（特殊目标，满足什么条件切换阶段目标并忽略团队目标，本阶段行动策略）
-
-// 队伍生产配置
-// 配置单位类型，数量，顺序，团队名，各级策略配置

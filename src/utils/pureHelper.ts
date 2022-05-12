@@ -89,4 +89,13 @@ function pullCreepTo(puller: Creep, bePulled: Creep, targetPos: Pos): boolean {
   return false;
 }
 
-export { splitCreepsInRamparts, alertInRange, pullCreepTo };
+function repeatArray<T>(array: T[], times: number) {
+  const result = [];
+  for (let i = 0; i < times; i++) {
+    result.push(...array);
+  }
+
+  return result;
+}
+
+export { splitCreepsInRamparts, alertInRange, pullCreepTo, repeatArray };
