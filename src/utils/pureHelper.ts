@@ -30,6 +30,7 @@ import {
   TOWER_RANGE,
   WORK
 } from "game/constants";
+// import { ClassUnit } from "./spawnUnit";
 /**
  * 将数组分为两边 检查哪些单位进入了特点坐标点群，如地堡
  * @param creeps
@@ -40,16 +41,38 @@ function splitCreepsInRamparts(creeps: Creep[], ramparts: RoomPosition[]) {
   const creepsInRamparts: Creep[] = [];
   const creepsNotInRamparts: Creep[] = [];
   for (const creep of creeps) {
-    for (const rampart of ramparts) {
-      if (creep.x === rampart.x && creep.y === rampart.y) {
-        creepsInRamparts.push(creep);
-      } else {
-        creepsNotInRamparts.push(creep);
-      }
+    const inRampart = checkIfInRampart(creep, ramparts);
+
+    if (inRampart) {
+      creepsInRamparts.push(creep);
+    } else {
+      creepsNotInRamparts.push(creep);
     }
   }
 
   return { creepsInRamparts, creepsNotInRamparts };
+}
+
+/**
+ * 检查本单位是否在某些坐标点群中
+ * @param creep
+ * @param ramparts
+ * @returns true为是
+ */
+function checkIfInRampart(creep: Creep, ramparts: RoomPosition[]): boolean {
+  let inRampart = false;
+  for (const rampart of ramparts) {
+    if (creep.x === rampart.x && creep.y === rampart.y) {
+      inRampart = true;
+      break;
+    }
+  }
+
+  return inRampart;
+}
+
+function filterAimsInRangeAndSort<T extends RoomPosition>(pos: RoomPosition, aims: T[], range: number) {
+  return aims.filter(aim => getRange(pos, aim) < range).sort((a, b) => getRange(pos, a) - getRange(pos, b));
 }
 
 /**
@@ -60,6 +83,10 @@ function splitCreepsInRamparts(creeps: Creep[], ramparts: RoomPosition[]) {
  * @returns 返回有侵入情况
  */
 function alertInRange(center: RoomPosition, checkAims: RoomPosition[], range: number) {
+  for (const aim of checkAims) {
+    console.log(getRange(center, aim));
+  }
+
   return checkAims.some(aim => getRange(center, aim) < range);
 }
 
@@ -98,4 +125,4 @@ function repeatArray<T>(array: T[], times: number) {
   return result;
 }
 
-export { splitCreepsInRamparts, alertInRange, pullCreepTo, repeatArray };
+export { splitCreepsInRamparts, alertInRange, pullCreepTo, repeatArray, checkIfInRampart, filterAimsInRangeAndSort };

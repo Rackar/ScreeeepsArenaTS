@@ -6,18 +6,16 @@ import {
   Source,
   StructureContainer,
   StructureSpawn,
+  StructureRampart,
   StructureTower,
   GameObject,
   Structure
 } from "game/prototypes";
 import { getRange } from "game/utils";
+import { getObjectsByPrototype } from "game";
 
-// 如果需要覆盖原生 Creep 接口
-declare module "game/prototypes" {
-  interface Creep {
-    importQueue?: () => void;
-  }
-}
+import { checkIfInRampart, filterAimsInRangeAndSort } from "./pureHelper";
+import { remoteAttackAndRun } from "./battle";
 
 const DEFUALT_UNITS = {
   smallCarryer: [MOVE, CARRY],
@@ -25,7 +23,8 @@ const DEFUALT_UNITS = {
   carryCreep: [WORK, WORK, WORK, CARRY],
   workCreepMove: [CARRY, WORK, WORK, WORK, MOVE],
 
-  fastCarryer: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
+  fastCarryer: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE],
+  tinyFootMan: [MOVE, ATTACK],
   miniFootMan: [MOVE, MOVE, MOVE, ATTACK],
   footMan: [MOVE, MOVE, ATTACK, ATTACK, MOVE, ATTACK],
   rider: [MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK],
@@ -74,6 +73,7 @@ const DEFUALT_UNITS = {
     ATTACK
   ],
 
+  tinyArcher: [MOVE, RANGED_ATTACK],
   smallArcher: [MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, RANGED_ATTACK],
   smallHealer: [MOVE, MOVE, MOVE, MOVE, MOVE, HEAL, MOVE, MOVE, HEAL]
 };
@@ -88,10 +88,13 @@ interface IUnit {
 }
 interface IQueueItem {
   me?: Creep | null;
-  flag: "moveToPosByRange" | "moveToUnitByRange" | "staySomeTime" | "callback" | "clearQueue";
+  unitName?: string;
+  flag: "moveToPosByRange" | "moveToUnitByRange" | "staySomeTime" | "callback" | "clearQueue" | "denfenseAimWithRange";
+  comment?: string;
   aim?: Creep | { x: number; y: number };
   range?: number;
   stayTime?: number;
+  stayInRampart?: boolean;
   /**
    * 为true时终止当前任务，向后执行
    */
@@ -102,7 +105,7 @@ class ClassUnit implements IUnit {
   public bodys: BodyPartConstant[];
   public repeat?: boolean;
   public object?: Creep | null;
-  public name?: string;
+  public name: string;
   public group?: string;
   public aimId?: any | null;
   public hitsVisual?: Visual | undefined;
@@ -111,10 +114,10 @@ class ClassUnit implements IUnit {
   public init: boolean;
   public aim?: { obj?: StructureContainer | Source; status: string } | null;
   public vis?: Visual;
-  public constructor(bodys: BodyPartConstant[], name?: string, group?: string, repeat?: boolean) {
+  public constructor(bodys: BodyPartConstant[], name: string, group?: string, repeat?: boolean) {
     // 构造函数
     this.bodys = bodys;
-    this.name = name;
+    this.name = name || "";
     this.group = group;
     this.repeat = repeat || false;
     this.init = false;
@@ -151,14 +154,14 @@ class ClassUnit implements IUnit {
   private pushToQueue(item: IQueueItem) {
     item.me = item.me || this.object;
     item.range = item.range === null || item.range === undefined ? 5 : item.range; // 默认范围5
-    item.stayTime = item.stayTime || 10; // 默认等待10秒
+    item.stayTime = item.stayTime || 0; // 默认0秒
     this.queue.push(item);
   }
 
   /**
    * 初始化任务列表，仅会执行一次
    * @param items 任务列表
-   * @param uniqueId 为了仅执行一次，需要明确的指定一个唯一的id
+   * @param uniqueId 为了仅执行一次，需要明确的指定一个唯一的id。推荐单位名称加序号，好打印
    */
   public initQueues(items: IQueueItem[], uniqueId: string) {
     if (!this.queueUniqueIds.includes(uniqueId)) {
@@ -195,11 +198,15 @@ class ClassUnit implements IUnit {
   public runQueue() {
     if (this.queue.length) {
       const item = this.queue[0];
-      console.log(`执行任务：${JSON.stringify(item)}`);
+      console.log(
+        `执行任务：${item.me?.id as string} ${this.queueUniqueIds[this.queueUniqueIds.length - 1]}---${
+          item.comment || item.flag
+        }`
+      );
       if (item && item.flag) {
         // 判断是否已满足停止条件
-        console.log(item.stopFunction);
         if (item.stopFunction && item.stopFunction()) {
+          console.log("本任务达到跳出条件，已弹出");
           this.queue.shift();
           return;
         }
@@ -209,7 +216,7 @@ class ClassUnit implements IUnit {
           case "moveToUnitByRange": {
             if (item.me && item.aim && item.range) {
               const range = getRange(item.me, item.aim);
-              console.log(range, "moveToPosByRange", item);
+              console.log(`moveToPos:${item.aim.x},${item.aim.y}, range: ${range}`);
               if (range < item.range) {
                 this.queue.shift();
                 this.runQueue();
@@ -234,6 +241,41 @@ class ClassUnit implements IUnit {
             break;
           }
 
+          case "denfenseAimWithRange": {
+            const { me, aim, range, stayInRampart } = item;
+            if (me && aim && range) {
+              const enemys = getObjectsByPrototype(Creep)
+                .filter(c => !c.my)
+                .filter(c => getRange(c, aim) < range);
+              if (enemys.length) {
+                me.moveTo(enemys[0]);
+                if (me.body && me.body.some(b => b.type === "ranged_attack")) {
+                  remoteAttackAndRun(me, enemys[0], enemys);
+                }
+              } else {
+                me.moveTo(aim);
+              }
+
+              if (stayInRampart) {
+                const ramparts = getObjectsByPrototype(StructureRampart).filter(c => c.my);
+                if (ramparts.length) {
+                  keepInRam(me, ramparts);
+                }
+              }
+
+              if (item.me && item.stayTime) {
+                if (item.stayTime === 1) {
+                  this.queue.shift();
+                  this.runQueue();
+                } else {
+                  item.stayTime--;
+                }
+              }
+            }
+
+            break;
+          }
+
           case "clearQueue": {
             this.queue = [];
             break;
@@ -248,10 +290,27 @@ class ClassUnit implements IUnit {
           }
 
           default:
+            if (item.jobFunction) {
+              item.jobFunction();
+            }
+
             break;
         }
       }
     }
+  }
+}
+
+function keepInRam(creep: Creep, ramparts: StructureRampart[], savetyMoveRange = 5) {
+  if (checkIfInRampart(creep, ramparts)) {
+    return true;
+  } else {
+    const aims = filterAimsInRangeAndSort(creep, ramparts, savetyMoveRange);
+    if (aims.length) {
+      creep.moveTo(aims[0]);
+    }
+
+    return false;
   }
 }
 
@@ -289,6 +348,18 @@ function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
       mySpawn.spawnCreep(repeatUnit.bodys);
     }
   }
+}
+
+function findUnitFromCreep(creep: Creep, units: ClassUnit[]) {
+  for (const unit of units) {
+    if (unit.object) {
+      if (creep.id && unit.object.id === creep.id) {
+        return unit;
+      }
+    }
+  }
+
+  return null;
 }
 
 export { spawnList, ClassUnit, DEFUALT_UNITS, IQueueItem };

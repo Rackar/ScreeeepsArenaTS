@@ -21,6 +21,8 @@ import {
   ATTACK,
   CARRY,
   ERR_NOT_IN_RANGE,
+  ERR_NOT_OWNER,
+  ERR_INVALID_TARGET,
   HEAL,
   MOVE,
   OK,
@@ -44,14 +46,23 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.smallCarryer, "puller"),
   new ClassUnit(DEFUALT_UNITS.carryCreep, "carryCreep1"),
   new ClassUnit(DEFUALT_UNITS.carryCreep, "carryCreep2"),
-  new ClassUnit(DEFUALT_UNITS.miniFootMan, "miniFootMan"),
+  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "tinyFootMan"),
+  new ClassUnit(DEFUALT_UNITS.smallCarryer, "scoreCarryer"),
+  new ClassUnit(DEFUALT_UNITS.tinyArcher, "denfenerOfSource"),
+  new ClassUnit(DEFUALT_UNITS.tinyArcher, "denfenerOfSource"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
+  // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
+  // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.smallHealer, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
   new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "cay1"),
-  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "rider"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "raG1", true),
-
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1", true),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher")
 ];
 
@@ -82,6 +93,8 @@ export function loop(): void {
     enemyRamparts
   );
 
+  // console.log(`enemysInRam:`, enemysInRam, `enemysNotInRam:`, enemysNotInRam);
+
   const workers = unitList.filter(e => e.name === "carryCreep" || e.name === "puller");
   const mySource = findClosestByRange(mySpawn, getObjectsByPrototype(Source));
   const spawnLeft = { x: mySpawn.x - 1, y: mySpawn.y };
@@ -91,7 +104,7 @@ export function loop(): void {
   const puller = unitList.find(e => e.name === "puller");
   const carryCreep1 = unitList.find(e => e.name === "carryCreep1");
   const carryCreep2 = unitList.find(e => e.name === "carryCreep2");
-  const miniFootMan = unitList.find(e => e.name === "miniFootMan");
+  const tinyFootMan = unitList.find(e => e.name === "tinyFootMan");
 
   // 造兵逻辑
   spawnList(mySpawn, unitList);
@@ -109,6 +122,7 @@ export function loop(): void {
         { flag: "staySomeTime", stayTime: 12 }, // 等待造carryCreep 12ticks
         {
           // 一旦造好就拉去矿点1
+          comment: "to pos 1",
           flag: "callback",
           stopFunction: () => {
             console.log("check stop func", carryCreep1);
@@ -122,6 +136,7 @@ export function loop(): void {
         {
           // 等待第二个旷工造好
           flag: "callback",
+          comment: "wait carryer2",
           jobFunction: () => {
             if (puller && puller.object) {
               puller.object.transfer(mySpawn, RESOURCE_ENERGY);
@@ -138,6 +153,7 @@ export function loop(): void {
         {
           // 拉走第二个
           flag: "callback",
+          comment: "pull carryer2",
           stopFunction: () => {
             if (puller && puller.object && carryCreep2 && carryCreep2.object) {
               return pullCreepTo(puller.object, carryCreep2.object, sourceOuter);
@@ -149,17 +165,37 @@ export function loop(): void {
         {
           // 持续传资源
           flag: "callback",
+          comment: "transfer",
           jobFunction: () => {
             if (puller && puller.object) {
               puller.object.transfer(mySpawn, RESOURCE_ENERGY);
             }
           },
           stopFunction: () => {
+            if (mySource.energy <= 20) {
+              return true;
+            }
+
             return false;
+          }
+        },
+        {
+          // 开始拉人去分矿
+          flag: "callback",
+          comment: "pull carryer2",
+          stopFunction: () => {
+            if (puller && puller.object && carryCreep1 && carryCreep1.object && carryCreep2 && carryCreep2.object) {
+              return (
+                pullCreepTo(puller.object, carryCreep2.object, { x: 99 - sourceOuter.x, y: sourceOuter.y }) &&
+                pullCreepTo(carryCreep2.object, carryCreep1.object, { x: 99 - sourceRight.x, y: sourceRight.y })
+              );
+            } else {
+              return false;
+            }
           }
         }
       ],
-      "0"
+      `${puller.name}0`
     );
     puller.runQueue();
   }
@@ -170,15 +206,23 @@ export function loop(): void {
       [
         {
           flag: "callback",
+          comment: "harvest",
           jobFunction: () => {
             worker.harvest(mySource);
             if (puller && puller.object) {
               worker.transfer(puller.object, RESOURCE_ENERGY);
             }
+          },
+          stopFunction: () => {
+            if (mySource.energy <= 20) {
+              return true;
+            }
+
+            return false;
           }
         }
       ],
-      "0"
+      `${carryCreep1.name}0`
     );
     carryCreep1.runQueue();
   }
@@ -189,52 +233,68 @@ export function loop(): void {
       [
         {
           flag: "callback",
+          comment: "harvest",
           jobFunction: () => {
             worker.harvest(mySource);
             if (puller && puller.object) {
               worker.transfer(puller.object, RESOURCE_ENERGY);
             }
+          },
+          stopFunction: () => {
+            if (mySource.energy <= 20) {
+              return true;
+            }
+
+            return false;
           }
         }
       ],
-      "0"
+      `${carryCreep2.name}0`
     );
     carryCreep2.runQueue();
   }
 
   // 骚扰单位逻辑
-  if (miniFootMan && checkSpawned(miniFootMan)) {
-    const miniFootManObj = miniFootMan.object;
-    miniFootMan.initQueues(
+  if (tinyFootMan && checkSpawned(tinyFootMan)) {
+    const tinyFootManObj = tinyFootMan.object;
+    tinyFootMan.initQueues(
       [
         {
           flag: "moveToPosByRange",
           aim: enemySpawn,
-          range: 10
+          range: 9
         },
         ...repeatArray(
           [
             {
               // 驻守杀农民，如果对方出兵则进入下一个队列
               flag: "callback",
+              comment: "findAndKillCarryer",
               jobFunction: () => {
-                if (miniFootMan && miniFootManObj) {
-                  const enemyCarryersOutside = enemysNotInRam.filter(e => e.body && e.body.some(b => b.type === CARRY));
+                if (tinyFootMan && tinyFootManObj) {
+                  const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+                  const { creepsNotInRamparts } = splitCreepsInRamparts(enemyss, enemyRamparts);
+                  const enemyCarryersOutside = creepsNotInRamparts.filter(
+                    e => e.body && e.body.some(b => b.type === "carry")
+                  );
+                  console.log("enemyCarryersOutside", enemyCarryersOutside.length);
                   if (enemyCarryersOutside.length > 0) {
-                    const aim = findClosestByRange(miniFootManObj, enemyCarryersOutside);
-                    miniFootManObj.moveTo(aim);
-                    miniFootManObj.attack(aim);
-                    alertInRange(miniFootManObj, enemyCarryersOutside, 5);
+                    const aim = findClosestByRange(tinyFootManObj, enemyCarryersOutside);
+                    tinyFootManObj.moveTo(aim);
+                    tinyFootManObj.attack(aim);
                   }
                 }
               },
               stopFunction: () => {
-                const enemyAtksOutside = enemysNotInRam.filter(
-                  e => (e.body && e.body.some(b => b.type === ATTACK)) || e.body.some(b => b.type === RANGED_ATTACK)
+                const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+                const enemyAtks = enemyss.filter(
+                  e => e.body && (e.body.some(b => b.type === "attack") || e.body.some(b => b.type === "ranged_attack"))
                 );
-                if (enemyAtksOutside.length && miniFootManObj) {
-                  if (alertInRange(miniFootManObj, enemyAtksOutside, 5)) {
-                    console.log(`${miniFootMan.name as string} enemy nearby. run away`);
+                console.log("enemyAtks", enemyAtks.length);
+                if (enemyAtks.length && tinyFootManObj) {
+                  console.log("find some atk enemy");
+                  if (alertInRange(tinyFootManObj, enemyAtks, 7)) {
+                    console.log(`${tinyFootMan.name} enemy nearby. run away`);
                     return true;
                   } else {
                     return false;
@@ -257,9 +317,83 @@ export function loop(): void {
           10
         )
       ],
-      "0"
+      `${tinyFootMan.name}0`
     );
-    miniFootMan.runQueue();
+    tinyFootMan.runQueue();
+  }
+
+  // 守矿小队
+  const denfeneresOfSource = unitList.filter(e => e.name === "denfenerOfSource");
+  for (const denfenerOfSource of denfeneresOfSource) {
+    if (denfenerOfSource && checkSpawned(denfenerOfSource)) {
+      denfenerOfSource.initQueues(
+        [
+          {
+            flag: "moveToPosByRange",
+            aim: collector,
+            range: 3
+          },
+          {
+            flag: "denfenseAimWithRange",
+            aim: collector,
+            range: 15,
+            stayInRampart: true
+          }
+        ],
+        `${denfenerOfSource.name}0`
+      );
+      denfenerOfSource.runQueue();
+    }
+  }
+
+  // 守家大队
+  const denfeneresOfBase = unitList.filter(e => e.name === "denfenerOfBase");
+  for (const denfenerOfBase of denfeneresOfBase) {
+    if (denfenerOfBase && checkSpawned(denfenerOfBase)) {
+      denfenerOfBase.initQueues(
+        [
+          {
+            flag: "denfenseAimWithRange",
+            aim: mySpawn,
+            range: 15,
+            stayInRampart: true,
+            stopFunction: () => {
+              const unitCount = denfeneresOfBase.filter(e => checkSpawned(e));
+              if (mySpawn) {
+                console.log("防守等待进攻信号，满6进攻", unitCount.length, `防守目标${mySpawn.x},${mySpawn.y}`);
+              }
+
+              if (unitCount.length >= 7) {
+                console.log("造兵完成，退出防御状态，进入下一步", unitCount.length);
+                return true;
+              } else {
+                return false;
+              }
+            }
+          },
+          {
+            flag: "denfenseAimWithRange",
+            aim: mySpawn,
+            range: 25,
+            stayInRampart: true,
+            stayTime: 50
+          },
+          {
+            flag: "moveToPosByRange",
+            aim: collector,
+            range: 5
+          },
+          {
+            flag: "denfenseAimWithRange",
+            aim: collector,
+            range: 20,
+            stayInRampart: true
+          }
+        ],
+        `${denfenerOfBase.name}0`
+      );
+      denfenerOfBase.runQueue();
+    }
   }
 
   // doPullAndWork(workers, findClosestByRange(mySpawn, sources), mySpawn);
@@ -287,7 +421,8 @@ export function loop(): void {
     if (carryerUnit && carryerUnit.object && carryerUnit.alive) {
       const creep = carryerUnit.object;
       if (creep.store[RESOURCE_SCORE] > 0) {
-        if (creep.transfer(collector, RESOURCE_SCORE) === ERR_NOT_IN_RANGE) {
+        const trans = creep.transfer(collector, RESOURCE_SCORE);
+        if (trans === ERR_NOT_IN_RANGE) {
           creep.moveTo(collector);
         }
       } else {
@@ -302,24 +437,24 @@ export function loop(): void {
     }
   }
 
-  const archeres = unitList.filter(u => u.name === "smallArcher");
+  // const archeres = unitList.filter(u => u.name === "smallArcher");
 
-  // 远程弓箭手行为
-  for (const archerUnit of archeres) {
-    if (archerUnit && archerUnit.object && archerUnit.alive) {
-      const archer = archerUnit.object;
+  // // 远程弓箭手行为
+  // for (const archerUnit of archeres) {
+  //   if (archerUnit && archerUnit.object && archerUnit.alive) {
+  //     const archer = archerUnit.object;
 
-      if (enemys && enemys.length) {
-        const enemy = archer.findClosestByRange(enemys);
-        if (enemy) {
-          const range = archer.getRangeTo(enemy);
+  //     if (enemys && enemys.length) {
+  //       const enemy = archer.findClosestByRange(enemys);
+  //       if (enemy) {
+  //         const range = archer.getRangeTo(enemy);
 
-          remoteAttackAndRun(archer, enemy, enemys);
-        }
-        // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
-      } else {
-        archer.moveTo(collector);
-      }
-    }
-  }
+  //         remoteAttackAndRun(archer, enemy, enemys);
+  //       }
+  //       // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
+  //     } else {
+  //       archer.moveTo(collector);
+  //     }
+  //   }
+  // }
 }

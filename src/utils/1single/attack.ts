@@ -108,7 +108,7 @@ function singleAttack(unit: ClassUnit, enemys: Creep[]): boolean {
           return true;
         }
       }
-    } else if (obj.body.some(b => b.type === "ranged_attack")) {
+    } else if (obj.body && obj.body.some(b => b.type === "ranged_attack")) {
       const canHitEnemys = findCreepsInRange(unit, enemys, RANGED_ATTACK_RANGE);
       const nearbyEnemy = checkEnemyOrder(canHitEnemys);
       if (nearbyEnemy) {
