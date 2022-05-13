@@ -13,6 +13,7 @@ import {
   RoomPosition,
   Source,
   StructureContainer,
+  StructureExtension,
   StructureRampart,
   StructureSpawn,
   StructureTower
@@ -30,7 +31,8 @@ import {
   RESOURCE_ENERGY,
   TOUGH,
   TOWER_RANGE,
-  WORK
+  WORK,
+  BuildableStructure
 } from "game/constants";
 import { ScoreCollector, RESOURCE_SCORE } from "arena";
 
@@ -39,6 +41,7 @@ import { spawnList, ClassUnit, DEFUALT_UNITS, IQueueItem } from "../utils/spawnU
 import { remoteAttackAndRun } from "../utils/battle";
 import { splitCreepsInRamparts, alertInRange, pullCreepTo, repeatArray } from "../utils/pureHelper";
 import { singleAttack, singleHeal } from "../utils/1single/attack";
+import { prebuildConstructionSites } from "../utils/1single/worker";
 
 let attacker: Creep | undefined;
 
@@ -49,7 +52,7 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.tinyFootMan, "tinyFootMan"),
   new ClassUnit(DEFUALT_UNITS.smallCarryer, "scoreCarryer"),
   new ClassUnit(DEFUALT_UNITS.tinyArcher, "denfenerOfSource"),
-  new ClassUnit(DEFUALT_UNITS.tinyArcher, "denfenerOfSource"),
+  new ClassUnit(DEFUALT_UNITS.workCreepMoveSpeed, "mysideSecendSourceWorker"),
   new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
   // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
   // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
@@ -469,24 +472,76 @@ export function loop(): void {
 
   // console.log(unitList[6]);
 
-  // const archeres = unitList.filter(u => u.name === "smallArcher");
+  const mysideSecendSourceWorker = unitList.find(u => u.name === "mysideSecendSourceWorker");
+  if (mysideSecendSourceWorker) {
+    const mySecendSource = { x: 99 - mySource.x, y: mySource.y };
+    wrapInitQueue(mysideSecendSourceWorker, [
+      {
+        flag: "moveToPosByRange",
+        aim: mySecendSource,
+        range: 2
+      },
+      {
+        flag: "callback",
+        comment: "buildSite",
+        stopFunction: () => {
+          prebuildConstructionSites(mysideSecendSourceWorker, StructureRampart, 1);
+          prebuildConstructionSites(mysideSecendSourceWorker, StructureExtension, 4);
+          return true;
+        }
+      },
+      {
+        flag: "callback",
+        comment: "harvestAndBuild",
+        stopFunction: () => {
+          function sortSites<T extends BuildableStructure>(sites: ConstructionSite<T>[], x: number, y: number) {
+            const first = sites.find(i => i.x === x && i.y === y && i.structurePrototypeName === "rampart");
+            if (first) {
+              return first;
+            } else {
+              return sites[0];
+            }
+          }
 
-  // // 远程弓箭手行为
-  // for (const archerUnit of archeres) {
-  //   if (archerUnit && archerUnit.object && archerUnit.alive) {
-  //     const archer = archerUnit.object;
+          const worker = mysideSecendSourceWorker;
+          const workerObj = worker.object;
+          if (workerObj) {
+            const sites = getObjectsByPrototype(ConstructionSite).filter(i => i.my && workerObj.getRangeTo(i) <= 1);
+            const site = sortSites(sites, mySecendSource.x, mySecendSource.y);
 
-  //     if (enemys && enemys.length) {
-  //       const enemy = archer.findClosestByRange(enemys);
-  //       if (enemy) {
-  //         const range = archer.getRangeTo(enemy);
+            const source = sources.find(i => getRange(i, workerObj) <= 1);
+            if (source) {
+              if (workerObj.store.getCapacity()) {
+                if (workerObj.store[RESOURCE_ENERGY] < (workerObj.store.getCapacity() as number) - 6) {
+                  workerObj.harvest(source);
+                } else {
+                  if (site) {
+                    workerObj.build(site);
+                  } else {
+                    // 如果有空的扩展，就放资源进去
+                    const extension = getObjectsByPrototype(StructureExtension).find(i => {
+                      return i.store[RESOURCE_ENERGY] < 100 && workerObj.getRangeTo(i) === 1;
+                    });
+                    if (extension) {
+                      workerObj.transfer(extension, RESOURCE_ENERGY);
+                    }
+                  }
+                }
+              }
+            }
+          }
 
-  //         remoteAttackAndRun(archer, enemy, enemys);
-  //       }
-  //       // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
-  //     } else {
-  //       archer.moveTo(collector);
-  //     }
-  //   }
-  // }
+          return false;
+        }
+      }
+    ]);
+  }
+}
+
+function wrapInitQueue(unit: ClassUnit, queues: IQueueItem[]) {
+  if (checkSpawned(unit)) {
+    unit.initQueues(queues, `${unit.name}-${unit.rebirthtime}`);
+  }
+
+  unit.runQueue();
 }

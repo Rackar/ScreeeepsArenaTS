@@ -22,6 +22,7 @@ const DEFUALT_UNITS = {
   smallWorker: [MOVE, WORK, CARRY],
   carryCreep: [WORK, WORK, WORK, CARRY],
   workCreepMove: [CARRY, WORK, WORK, WORK, MOVE],
+  workCreepMoveSpeed: [CARRY, WORK, WORK, WORK, MOVE, MOVE, MOVE],
 
   fastCarryer: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE],
   tinyFootMan: [MOVE, ATTACK],
