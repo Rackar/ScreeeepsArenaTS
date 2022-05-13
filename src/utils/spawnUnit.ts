@@ -114,6 +114,7 @@ class ClassUnit implements IUnit {
   public init: boolean;
   public aim?: { obj?: StructureContainer | Source; status: string } | null;
   public vis?: Visual;
+  public rebirthtime = 0;
   public constructor(bodys: BodyPartConstant[], name: string, group?: string, repeat?: boolean) {
     // 构造函数
     this.bodys = bodys;
@@ -128,6 +129,11 @@ class ClassUnit implements IUnit {
     if (this.object?.hits) {
       return true;
     } else {
+      if (this.init === true) {
+        this.rebirthtime++;
+        this.init = false;
+      }
+
       return false;
     }
   }
@@ -208,6 +214,12 @@ class ClassUnit implements IUnit {
         if (item.stopFunction && item.stopFunction()) {
           console.log("本任务达到跳出条件，已弹出");
           this.queue.shift();
+          return;
+        }
+
+        // 检测单位是不是挂了
+        if (!item.me || !item.me.hits) {
+          this.queue = [];
           return;
         }
 
