@@ -38,6 +38,7 @@ import { remoteAttackAndRun, addDoctorMoveLogic } from "../utils/battle";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../utils/ui";
 
 import { addPeopleUi } from "../utils/uiCreep";
+import { singleAttack, singleHeal } from "../utils/1single/attack";
 // 本版本ok
 // 坑1 Spawn初始化store为500，然后tick1变为300
 // 坑2 spawnCreep需要花费时间，所以不能按照不存在为判断条件来反复执行，只能以存在的else
@@ -112,7 +113,7 @@ export function loop() {
   }
 
   // 判断如果造兵数量不足 但是战力足够已消灭部分敌人，则发起进攻
-  if (totalKilled > 5) {
+  if (totalKilled > 5 || getTicks() >= 1600) {
     startAttack = true;
   }
 
@@ -124,6 +125,11 @@ export function loop() {
   lastEnemyNumber = enemys.length;
 
   spawnList(mySpawn, unitList);
+  // 给所有可能的战斗单位添加单人攻击和奶的逻辑件
+  for (const myUnit of unitList) {
+    singleAttack(myUnit, enemys);
+    singleHeal(myUnit, unitList);
+  }
 
   // 测试使用单worker野外偷矿建extension
   const workers = unitList.filter(u => u.name === "smallWorker");
@@ -280,7 +286,7 @@ export function loop() {
       const enemy = archer.findClosestByRange(enemys);
 
       if (enemy) {
-        const range = archer.getRangeTo(enemy);
+        const range = mySpawn.getRangeTo(enemy);
         if (range <= 20) {
           // archer.rangedAttack(enemy) == ERR_NOT_IN_RANGE && archer.moveTo(enemy)
           remoteAttackAndRun(archer, enemy, enemys);

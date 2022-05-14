@@ -54,6 +54,62 @@ function splitCreepsInRamparts(creeps: Creep[], ramparts: RoomPosition[]) {
 }
 
 /**
+ * 根据最大距离连接并拆为分组
+ * @param creeps 带分组列表
+ * @param range 最大距离
+ * @returns
+ */
+function splitCreepByPosition(creeps: Creep[], range = 6): { results: Creep[][] } {
+  const groups = [];
+
+  // 粗聚类
+  for (let i = 0; i < creeps.length; i++) {
+    const creepsGroup: Creep[] = [];
+    const element = creeps[i];
+    creepsGroup.push(element);
+    for (let j = 0; j < creeps.length; j++) {
+      const other = creeps[j];
+      if (i === j) {
+        continue;
+      }
+
+      if (getRange(element, other) <= range) {
+        if (!creepsGroup.includes(element)) {
+          creepsGroup.push(element);
+        }
+
+        creepsGroup.push(other);
+      }
+    }
+
+    groups.push(creepsGroup);
+  }
+
+  const results: Creep[][] = [];
+  for (const group of groups) {
+    let pushed = false;
+    for (const result of results) {
+      if (result.some(creep => group.includes(creep))) {
+        for (const creep of group) {
+          if (!result.includes(creep)) {
+            result.push(creep);
+          }
+        }
+
+        pushed = true;
+        break;
+      }
+    }
+
+    if (!pushed) {
+      results.push(group);
+    }
+  }
+
+  return { results };
+}
+
+/**
  * 检查本单位是否在某些坐标点群中
  * @param creep
  * @param ramparts

@@ -85,7 +85,9 @@ function addDoctorMoveLogic(doctors: Creep[], myUnits: Creep[], enemys: Creep[])
   for (const doctor of doctors) {
     // const doctor = doctors[i];
     const myDamagedCreeps = getObjectsByPrototype(Creep).filter(o => o.my && o.hits < o.hitsMax);
-    const battleUnits = myUnits.filter(c => c.body.some(b => b.type === "attack" || b.type === "ranged_attack"));
+    const battleUnits = getObjectsByPrototype(Creep).filter(
+      c => c.my && c.body.some(b => b.type === "attack" || b.type === "ranged_attack")
+    );
 
     // 如果自己受伤并离敌人过近，则远离敌军
     if (doctor.hits < doctor.hitsMax * 0.7) {
