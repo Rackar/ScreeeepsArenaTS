@@ -135,318 +135,264 @@ export function loop(): void {
 
   // 火车挖矿逻辑
   if (puller) {
-    if (checkSpawned(puller)) {
-      puller.initQueues(
-        [
-          { flag: "moveToPosByRange", aim: spawnLeft, range: 1 },
-          { flag: "staySomeTime", stayTime: 12 }, // 等待造carryCreep 12ticks
-          {
-            // 一旦造好就拉去矿点1
-            comment: "to pos 1",
-            flag: "callback",
-            stopFunction: () => {
-              console.log("check stop func", carryCreep1);
-              if (puller && puller.object && carryCreep1 && carryCreep1.object && checkSpawned(carryCreep1)) {
-                return pullCreepTo(puller.object, carryCreep1.object, sourceRight);
-              } else {
-                return false;
-              }
-            }
-          },
-          {
-            // 等待第二个旷工造好
-            flag: "callback",
-            comment: "wait carryer2",
-            jobFunction: () => {
-              if (puller && puller.object) {
-                puller.object.transfer(mySpawn, RESOURCE_ENERGY);
-              }
-            },
-            stopFunction: () => {
-              if (puller && puller.object && carryCreep2 && checkSpawned(carryCreep2)) {
-                return true;
-              } else {
-                return false;
-              }
-            }
-          },
-          {
-            // 拉走第二个
-            flag: "callback",
-            comment: "pull carryer2",
-            stopFunction: () => {
-              if (puller && puller.object && carryCreep2 && carryCreep2.object) {
-                return pullCreepTo(puller.object, carryCreep2.object, sourceOuter);
-              } else {
-                return false;
-              }
-            }
-          },
-          {
-            // 持续传资源
-            flag: "callback",
-            comment: "transfer",
-            jobFunction: () => {
-              if (puller && puller.object) {
-                puller.object.transfer(mySpawn, RESOURCE_ENERGY);
-              }
-            }
+    puller.initQueueAndRun([
+      { flag: "moveToPosByRange", aim: spawnLeft, range: 1 },
+      { flag: "staySomeTime", stayTime: 12 }, // 等待造carryCreep 12ticks
+      {
+        // 一旦造好就拉去矿点1
+        comment: "to pos 1",
+        flag: "callback",
+        stopFunction: () => {
+          console.log("check stop func", carryCreep1);
+          if (puller && puller.object && carryCreep1 && carryCreep1.object && checkSpawned(carryCreep1)) {
+            return pullCreepTo(puller.object, carryCreep1.object, sourceRight);
+          } else {
+            return false;
           }
-        ],
-        `${puller.name}-${puller.rebirthtime}`
-      );
-    }
-
-    puller.runQueue();
+        }
+      },
+      {
+        // 等待第二个旷工造好
+        flag: "callback",
+        comment: "wait carryer2",
+        jobFunction: () => {
+          if (puller && puller.object) {
+            puller.object.transfer(mySpawn, RESOURCE_ENERGY);
+          }
+        },
+        stopFunction: () => {
+          if (puller && puller.object && carryCreep2 && checkSpawned(carryCreep2)) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+      },
+      {
+        // 拉走第二个
+        flag: "callback",
+        comment: "pull carryer2",
+        stopFunction: () => {
+          if (puller && puller.object && carryCreep2 && carryCreep2.object) {
+            return pullCreepTo(puller.object, carryCreep2.object, sourceOuter);
+          } else {
+            return false;
+          }
+        }
+      },
+      {
+        // 持续传资源
+        flag: "callback",
+        comment: "transfer",
+        jobFunction: () => {
+          if (puller && puller.object) {
+            puller.object.transfer(mySpawn, RESOURCE_ENERGY);
+          }
+        }
+      }
+    ]);
   }
 
   if (carryCreep1) {
-    if (carryCreep1.object && checkSpawned(carryCreep1)) {
+    if (carryCreep1.object) {
       const worker = carryCreep1.object;
-      carryCreep1.initQueues(
-        [
-          {
-            flag: "callback",
-            comment: "harvest",
-            jobFunction: () => {
-              worker.harvest(mySource);
-              if (puller && puller.object) {
-                worker.transfer(puller.object, RESOURCE_ENERGY);
-              }
+      carryCreep1.initQueueAndRun([
+        {
+          flag: "callback",
+          comment: "harvest",
+          jobFunction: () => {
+            worker.harvest(mySource);
+            if (puller && puller.object) {
+              worker.transfer(puller.object, RESOURCE_ENERGY);
             }
           }
-        ],
-        `${carryCreep1.name}-${carryCreep1.rebirthtime}`
-      );
+        }
+      ]);
     }
-
-    carryCreep1.runQueue();
   }
 
   if (carryCreep2) {
-    if (carryCreep2.object && checkSpawned(carryCreep2)) {
+    if (carryCreep2.object) {
       const worker = carryCreep2.object;
-      carryCreep2.initQueues(
-        [
-          {
-            flag: "callback",
-            comment: "harvest",
-            jobFunction: () => {
-              worker.harvest(mySource);
-              if (puller && puller.object) {
-                worker.transfer(puller.object, RESOURCE_ENERGY);
-              }
+      carryCreep2.initQueueAndRun([
+        {
+          flag: "callback",
+          comment: "harvest",
+          jobFunction: () => {
+            worker.harvest(mySource);
+            if (puller && puller.object) {
+              worker.transfer(puller.object, RESOURCE_ENERGY);
             }
           }
-        ],
-        `${carryCreep2.name}-${carryCreep2.rebirthtime}`
-      );
+        }
+      ]);
     }
-
-    carryCreep2.runQueue();
   }
 
   // 骚扰单位逻辑
   if (tinyFootMan) {
-    if (checkSpawned(tinyFootMan)) {
-      const tinyFootManObj = tinyFootMan.object;
-      tinyFootMan.initQueues(
+    const tinyFootManObj = tinyFootMan.object;
+    tinyFootMan.initQueueAndRun([
+      {
+        flag: "moveToPosByRange",
+        aim: enemySpawn,
+        range: 9
+      },
+      ...repeatArray(
         [
           {
-            flag: "moveToPosByRange",
-            aim: enemySpawn,
-            range: 9
-          },
-          ...repeatArray(
-            [
-              {
-                // 驻守杀农民，如果对方出兵则进入下一个队列
-                flag: "callback",
-                comment: "findAndKillCarryer",
-                jobFunction: () => {
-                  if (tinyFootMan && tinyFootManObj) {
-                    const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
-                    const { creepsNotInRamparts } = splitCreepsInRamparts(enemyss, enemyRamparts);
-                    const enemyCarryersOutside = creepsNotInRamparts.filter(
-                      e => e.body && e.body.some(b => b.type === "carry")
-                    );
-                    console.log("enemyCarryersOutside", enemyCarryersOutside.length);
-                    if (enemyCarryersOutside.length > 0) {
-                      const aim = findClosestByRange(tinyFootManObj, enemyCarryersOutside);
-                      tinyFootManObj.moveTo(aim);
-                      tinyFootManObj.attack(aim);
-                    }
-                  }
-                },
-                stopFunction: () => {
-                  const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
-                  const enemyAtks = enemyss.filter(
-                    e =>
-                      e.body && (e.body.some(b => b.type === "attack") || e.body.some(b => b.type === "ranged_attack"))
-                  );
-                  console.log("enemyAtks", enemyAtks.length);
-                  if (enemyAtks.length && tinyFootManObj) {
-                    console.log("find some atk enemy");
-                    if (alertInRange(tinyFootManObj, enemyAtks, 7)) {
-                      console.log(`${tinyFootMan.name} enemy nearby. run away`);
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  } else {
-                    return false;
-                  }
+            // 驻守杀农民，如果对方出兵则进入下一个队列
+            flag: "callback",
+            comment: "findAndKillCarryer",
+            jobFunction: () => {
+              if (tinyFootMan && tinyFootManObj) {
+                const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+                const { creepsNotInRamparts } = splitCreepsInRamparts(enemyss, enemyRamparts);
+                const enemyCarryersOutside = creepsNotInRamparts.filter(
+                  e => e.body && e.body.some(b => b.type === "carry")
+                );
+                console.log("enemyCarryersOutside", enemyCarryersOutside.length);
+                if (enemyCarryersOutside.length > 0) {
+                  const aim = findClosestByRange(tinyFootManObj, enemyCarryersOutside);
+                  tinyFootManObj.moveTo(aim);
+                  tinyFootManObj.attack(aim);
                 }
-              } as IQueueItem,
-              {
-                flag: "moveToPosByRange",
-                aim: mySpawn,
-                range: 4
-              } as IQueueItem,
-              {
-                flag: "staySomeTime",
-                stayTime: 30
-              } as IQueueItem
-            ],
-            10
-          )
+              }
+            },
+            stopFunction: () => {
+              const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+              const enemyAtks = enemyss.filter(
+                e => e.body && (e.body.some(b => b.type === "attack") || e.body.some(b => b.type === "ranged_attack"))
+              );
+              console.log("enemyAtks", enemyAtks.length);
+              if (enemyAtks.length && tinyFootManObj) {
+                console.log("find some atk enemy");
+                if (alertInRange(tinyFootManObj, enemyAtks, 7)) {
+                  console.log(`${tinyFootMan.name} enemy nearby. run away`);
+                  return true;
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            }
+          } as IQueueItem,
+          {
+            flag: "moveToPosByRange",
+            aim: mySpawn,
+            range: 4
+          } as IQueueItem,
+          {
+            flag: "staySomeTime",
+            stayTime: 30
+          } as IQueueItem
         ],
-        `${tinyFootMan.name}-${tinyFootMan.rebirthtime}`
-      );
-    }
-
-    tinyFootMan.runQueue();
+        10
+      )
+    ]);
   }
 
   // 守矿小队
   const denfeneresOfSource = unitList.filter(e => e.name === "denfenerOfSource");
   for (const denfenerOfSource of denfeneresOfSource) {
-    if (denfenerOfSource && checkSpawned(denfenerOfSource)) {
-      denfenerOfSource.initQueues(
-        [
-          {
-            flag: "moveToPosByRange",
-            aim: collector,
-            range: 3
-          },
-          {
-            flag: "denfenseAimWithRange",
-            aim: collector,
-            range: 15,
-            stayInRampart: true
-          }
-        ],
-        `${denfenerOfSource.name}-${denfenerOfSource.rebirthtime}`
-      );
-    }
-
-    denfenerOfSource.runQueue();
+    denfenerOfSource.initQueueAndRun([
+      {
+        flag: "moveToPosByRange",
+        aim: collector,
+        range: 3
+      },
+      {
+        flag: "denfenseAimWithRange",
+        aim: collector,
+        range: 15,
+        stayInRampart: true
+      }
+    ]);
   }
 
   // 守家大队
   const denfeneresOfBase = unitList.filter(e => e.name === "denfenerOfBase");
   for (const denfenerOfBase of denfeneresOfBase) {
-    if (denfenerOfBase && checkSpawned(denfenerOfBase)) {
-      denfenerOfBase.initQueues(
-        [
-          {
-            flag: "denfenseAimWithRange",
-            aim: mySpawn,
-            range: 15,
-            stayInRampart: true,
-            stopFunction: () => {
-              const unitCount = denfeneresOfBase.filter(e => checkSpawned(e));
-              if (mySpawn) {
-                console.log("防守等待进攻信号,满7进攻。", unitCount.length, `防守目标${mySpawn.x},${mySpawn.y}`);
-              }
-
-              if (unitCount.length >= 7 || getTicks() > 500) {
-                console.log("造兵完成或满足500tick,退出防御状态,进入下一步", unitCount.length);
-                return true;
-              } else {
-                return false;
-              }
-            }
-          },
-          {
-            flag: "denfenseAimWithRange",
-            aim: mySpawn,
-            range: 25,
-            stayInRampart: true,
-            stayTime: 50
-          },
-          {
-            flag: "moveToPosByRange",
-            aim: collector,
-            range: 5
-          },
-          {
-            flag: "denfenseAimWithRange",
-            aim: collector,
-            range: 20,
-            stayInRampart: true
+    denfenerOfBase.initQueueAndRun([
+      {
+        flag: "denfenseAimWithRange",
+        aim: mySpawn,
+        range: 15,
+        stayInRampart: true,
+        stopFunction: () => {
+          const unitCount = denfeneresOfBase.filter(e => checkSpawned(e));
+          if (mySpawn) {
+            console.log("防守等待进攻信号,满7进攻。", unitCount.length, `防守目标${mySpawn.x},${mySpawn.y}`);
           }
-        ],
-        `${denfenerOfBase.name}-${denfenerOfBase.rebirthtime}`
-      );
-    }
 
-    denfenerOfBase.runQueue();
+          if (unitCount.length >= 7 || getTicks() > 500) {
+            console.log("造兵完成或满足500tick,退出防御状态,进入下一步", unitCount.length);
+            return true;
+          } else {
+            return false;
+          }
+        }
+      },
+      {
+        flag: "denfenseAimWithRange",
+        aim: mySpawn,
+        range: 25,
+        stayInRampart: true,
+        stayTime: 50
+      },
+      {
+        flag: "moveToPosByRange",
+        aim: collector,
+        range: 5
+      },
+      {
+        flag: "denfenseAimWithRange",
+        aim: collector,
+        range: 20,
+        stayInRampart: true
+      }
+    ]);
   }
 
   // 守我方分矿单位逻辑
   const denfenerOfMysideSource = unitList.find(e => e.name === "denfenerOfMysideSource");
 
   if (denfenerOfMysideSource) {
-    if (checkSpawned(denfenerOfMysideSource)) {
-      const mySecendSource = { x: 99 - mySource.x, y: mySource.y };
+    const mySecendSource = { x: 99 - mySource.x, y: mySource.y };
 
-      denfenerOfMysideSource.initQueues(
-        [
-          {
-            flag: "moveToPosByRange",
-            aim: mySecendSource,
-            range: 3
-          },
-          {
-            flag: "denfenseAimWithRange",
-            aim: mySecendSource,
-            range: 5,
-            stayInRampart: true
-          }
-        ],
-        `${denfenerOfMysideSource.name}+${denfenerOfMysideSource.rebirthtime}`
-      );
-    }
-
-    denfenerOfMysideSource.runQueue();
+    denfenerOfMysideSource.initQueueAndRun([
+      {
+        flag: "moveToPosByRange",
+        aim: mySecendSource,
+        range: 3
+      },
+      {
+        flag: "denfenseAimWithRange",
+        aim: mySecendSource,
+        range: 5,
+        stayInRampart: true
+      }
+    ]);
   }
 
   // 骚扰分矿单位逻辑
   const denfenerOfEnemysideSource = unitList.find(e => e.name === "denfenerOfEnemysideSource");
   if (denfenerOfEnemysideSource) {
-    if (checkSpawned(denfenerOfEnemysideSource)) {
-      const enemySecendSource = { x: 99 - mySource.x, y: enemySpawn.y };
-
-      denfenerOfEnemysideSource.initQueues(
-        [
-          {
-            flag: "moveToPosByRange",
-            aim: enemySecendSource,
-            range: 3
-          },
-          {
-            flag: "denfenseAimWithRange",
-            aim: enemySecendSource,
-            range: 5,
-            stayInRampart: true
-          }
-        ],
-        `${denfenerOfEnemysideSource.name}-${denfenerOfEnemysideSource.rebirthtime}`
-      );
-    }
-
-    denfenerOfEnemysideSource.runQueue();
+    const enemySecendSource = { x: 99 - mySource.x, y: enemySpawn.y };
+    denfenerOfEnemysideSource.initQueueAndRun([
+      {
+        flag: "moveToPosByRange",
+        aim: enemySecendSource,
+        range: 3
+      },
+      {
+        flag: "denfenseAimWithRange",
+        aim: enemySecendSource,
+        range: 5,
+        stayInRampart: true
+      }
+    ]);
   }
 
   const carryers = unitList.filter(u => u.name === "scoreCarryer");
@@ -475,7 +421,7 @@ export function loop(): void {
   const mysideSecendSourceWorker = unitList.find(u => u.name === "mysideSecendSourceWorker");
   if (mysideSecendSourceWorker) {
     const mySecendSource = { x: 99 - mySource.x, y: mySource.y };
-    wrapInitQueue(mysideSecendSourceWorker, [
+    mysideSecendSourceWorker.initQueueAndRun([
       {
         flag: "moveToPosByRange",
         aim: mySecendSource,
@@ -536,12 +482,4 @@ export function loop(): void {
       }
     ]);
   }
-}
-
-function wrapInitQueue(unit: ClassUnit, queues: IQueueItem[]) {
-  if (checkSpawned(unit)) {
-    unit.initQueues(queues, `${unit.name}-${unit.rebirthtime}`);
-  }
-
-  unit.runQueue();
 }

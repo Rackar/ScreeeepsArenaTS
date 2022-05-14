@@ -183,6 +183,21 @@ class ClassUnit implements IUnit {
       console.log(`添加任务成功：${uniqueId}`);
     }
   }
+  /**
+   * 组合initQueue和runQueue
+   * @param queues 任务队列
+   */
+
+  public initQueueAndRun(queues: IQueueItem[]) {
+    if (this.checkSpawned()) {
+      this.initQueues(queues, `${this.name}-${this.rebirthtime}`);
+    }
+
+    this.runQueue();
+  }
+  public checkSpawned() {
+    return this && this.object && this.alive && this.spawned;
+  }
 
   /**
    * 删除任务列表，重新添加，仅会执行一次

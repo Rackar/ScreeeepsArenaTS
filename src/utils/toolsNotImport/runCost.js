@@ -8,7 +8,7 @@ const [MOVE, WORK, CARRY, ATTACK, RANGED_ATTACK, HEAL, TOUGH] = [
   "TOUGH"
 ];
 
-const unitDemo = [MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK];
+const unitDemo = [CARRY, WORK, WORK, WORK, MOVE, MOVE, MOVE];
 calcCost(unitDemo);
 function calcCost(array) {
   let cost = 0;
