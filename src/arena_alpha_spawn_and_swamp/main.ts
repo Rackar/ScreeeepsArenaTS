@@ -15,10 +15,13 @@ import {
   StructureExtension,
   StructureSpawn,
   StructureTower,
-  Resource
+  Resource,
+  RoomPosition,
+  _Constructor
 } from "game/prototypes";
 import {
   ATTACK,
+  BuildableStructure,
   CARRY,
   ERR_NOT_IN_RANGE,
   HEAL,

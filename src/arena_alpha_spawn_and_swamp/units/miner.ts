@@ -7,7 +7,8 @@ import {
   StructureExtension,
   StructureSpawn,
   StructureTower,
-  Resource
+  Resource,
+  StructureRampart
 } from "game/prototypes";
 import {
   ATTACK,
@@ -24,12 +25,14 @@ import {
 } from "game/constants";
 
 import { spawnList, ClassUnit } from "../../utils/spawnUnit";
+import { buildUseSource } from "utils/1single/worker";
 
 const pickedContainerIds: string[] = [];
 
 function withdrawClosestContainer(miner: Creep, containers: StructureContainer[], mySpawn: StructureSpawn): void {
   // 工人从资源收集能量
   const source = miner.findClosestByPath(containers);
+
   if (miner.store.getFreeCapacity(RESOURCE_ENERGY) && source) {
     const info = miner.withdraw(source, RESOURCE_ENERGY);
     if (info === ERR_NOT_IN_RANGE) {
@@ -207,6 +210,16 @@ function getWildSource(worker: ClassUnit, sources: StructureContainer[], mySpawn
   const workerObj = worker.object;
   if (!workerObj) {
     return;
+  }
+
+  const source = workerObj.findClosestByPath(sources);
+  // 给基地加一个地堡
+  if (source) {
+    if (!buildUseSource(workerObj, mySpawn, StructureRampart, source)) {
+      return;
+    }
+
+    console.log("地堡建完应该顺利出去的");
   }
 
   if (workerObj.getRangeTo(mySpawn) <= 1) {

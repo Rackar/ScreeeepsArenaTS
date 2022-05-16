@@ -18,7 +18,8 @@ import {
   StructureTower,
   Resource,
   _Constructor,
-  StructureRampart
+  StructureRampart,
+  RoomPosition
 } from "game/prototypes";
 import {
   ATTACK,
@@ -73,6 +74,65 @@ export function prebuildConstructionSites<T extends BuildableStructure>(
       const info = createConstructionSite({ x: x + i, y: y + j }, buildSiteType);
       if (!info.error) {
         count++;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * 在具体位置建筑一个建筑，使用特定能量点
+ * @param builders 使用的工人们
+ * @param aimPosition 待见的位置
+ * @param buildType 建造的类型
+ * @param source 指定附近的资源或容器
+ * @returns true为建造已完成
+ */
+export function buildUseSource<T extends BuildableStructure>(
+  builders: Creep[] | Creep,
+  aimPosition: RoomPosition,
+  buildType: _Constructor<T>,
+  source: Source | StructureContainer
+) {
+  // 如果woker不是数组， 就转换成数组
+  if (!Array.isArray(builders)) {
+    builders = [builders];
+  }
+
+  for (const worker of builders) {
+    const mySites = getObjectsByPrototype(ConstructionSite).filter(c => c.my);
+    const thisSite = mySites.find(c => c.x === aimPosition.x && c.y === aimPosition.y);
+    if (thisSite && thisSite.progress < thisSite.progressTotal) {
+      if (!worker.store[RESOURCE_ENERGY]) {
+        if (source instanceof Source) {
+          if (source && worker.harvest(source) === ERR_NOT_IN_RANGE) {
+            worker.moveTo(source);
+          }
+        } else if (source instanceof StructureContainer) {
+          if (source && worker.withdraw(source, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+            worker.moveTo(source);
+          }
+        } else {
+          console.log("没有找到合适的矿源");
+        }
+      } else {
+        if (worker.build(thisSite) === ERR_NOT_IN_RANGE) {
+          worker.moveTo(thisSite);
+        }
+      }
+    } else {
+      const result = getObjectsByPrototype(buildType).find(
+        c => c.exists && c.x === aimPosition.x && c.y === aimPosition.y
+      );
+      // 如果已建好，返回true
+      if (result) {
+        return true;
+      } else {
+        const info = createConstructionSite(aimPosition, buildType);
+        if (!info.error) {
+          console.log("can't build here");
+        }
       }
     }
   }
