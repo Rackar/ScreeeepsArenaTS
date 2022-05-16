@@ -36,12 +36,13 @@ import {
 
 import { withdrawClosestContainer, getWildSource } from "./units/miner";
 import { checkAim } from "./units/rider";
-import { spawnList, ClassUnit, DEFUALT_UNITS } from "../utils/spawnUnit";
+import { spawnList, ClassUnit, DEFUALT_UNITS, IQueueItem } from "../utils/spawnUnit";
 import { remoteAttackAndRun, addDoctorMoveLogic } from "../utils/battle";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad, showHealthBar } from "../utils/ui";
 
 import { addPeopleUi } from "../utils/uiCreep";
 import { singleAttack, singleHeal } from "../utils/1single/attack";
+import { alertInRange, repeatArray, splitCreepsInRamparts } from "utils/pureHelper";
 // 本版本ok
 // 坑1 Spawn初始化store为500，然后tick1变为300
 // 坑2 spawnCreep需要花费时间，所以不能按照不存在为判断条件来反复执行，只能以存在的else
@@ -145,13 +146,74 @@ export function loop() {
   }
 
   // 测试使用单骑兵野外骚扰和偷塔
-  const riders = unitList.filter(u => u.name === "rider");
-  for (const rider of riders) {
-    if (rider && rider.object && rider.alive) {
-      checkAim(rider);
-      // walkAndSteal(rider);
-      addPeopleUi(rider);
-    }
+  const tinyFootMan = unitList.find(u => u.name === "rider");
+  // for (const rider of riders) {
+  //   if (rider && rider.object && rider.alive) {
+  //     checkAim(rider);
+  //     // walkAndSteal(rider);
+  //     addPeopleUi(rider);
+  //   }
+  // }
+  // 骚扰单位逻辑
+  if (tinyFootMan) {
+    const tinyFootManObj = tinyFootMan.object;
+    tinyFootMan.initQueueAndRun([
+      {
+        flag: "moveToPosByRange",
+        aim: { x: 50, y: 50 },
+        range: 20
+      },
+      ...repeatArray(
+        [
+          {
+            // 驻守杀农民，如果对方出兵则进入下一个队列
+            flag: "callback",
+            comment: "findAndKillCarryer",
+            jobFunction: () => {
+              if (tinyFootMan && tinyFootManObj) {
+                const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+
+                const enemyCarryersOutside = enemyss.filter(e => e.body && e.body.some(b => b.type === "carry"));
+                console.log("enemyCarryersOutside", enemyCarryersOutside.length);
+                if (enemyCarryersOutside.length > 0) {
+                  const aim = findClosestByRange(tinyFootManObj, enemyCarryersOutside);
+                  tinyFootManObj.moveTo(aim);
+                  tinyFootManObj.attack(aim);
+                }
+              }
+            },
+            stopFunction: () => {
+              const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+              const enemyAtks = enemyss.filter(
+                e => e.body && (e.body.some(b => b.type === "attack") || e.body.some(b => b.type === "ranged_attack"))
+              );
+              console.log("enemyAtks", enemyAtks.length);
+              if (enemyAtks.length && tinyFootManObj) {
+                console.log("find some atk enemy");
+                if (alertInRange(tinyFootManObj, enemyAtks, 10)) {
+                  console.log(`${tinyFootMan.name} enemy nearby. run away`);
+                  return true;
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            }
+          } as IQueueItem,
+          {
+            flag: "moveToPosByRange",
+            aim: mySpawn,
+            range: 4
+          } as IQueueItem,
+          {
+            flag: "staySomeTime",
+            stayTime: 30
+          } as IQueueItem
+        ],
+        10
+      )
+    ]);
   }
 
   // 采集工人行为
