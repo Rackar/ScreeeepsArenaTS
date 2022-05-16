@@ -39,11 +39,18 @@ import { ScoreCollector, RESOURCE_SCORE } from "arena";
 import { withdrawClosestContainer } from "../arena_alpha_spawn_and_swamp/units/miner";
 import { spawnList, ClassUnit, DEFUALT_UNITS, IQueueItem } from "../utils/spawnUnit";
 import { remoteAttackAndRun } from "../utils/battle";
-import { splitCreepsInRamparts, alertInRange, pullCreepTo, repeatArray } from "../utils/pureHelper";
+import {
+  splitCreepsInRamparts,
+  alertInRange,
+  pullCreepTo,
+  repeatArray,
+  calculateCenterOfCreeps,
+  splitCreepByPosition,
+  hasBattleParts
+} from "../utils/pureHelper";
 import { singleAttack, singleHeal } from "../utils/1single/attack";
 import { prebuildConstructionSites } from "../utils/1single/worker";
-
-let attacker: Creep | undefined;
+import { addAttackRangeToCreeps, addHitsLabelToCreeps, showHealthBar } from "utils/ui";
 
 const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.smallCarryer, "puller"),
@@ -51,9 +58,11 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.carryCreep, "carryCreep2"),
   new ClassUnit(DEFUALT_UNITS.tinyFootMan, "tinyFootMan"),
   new ClassUnit(DEFUALT_UNITS.smallCarryer, "scoreCarryer"),
-  new ClassUnit(DEFUALT_UNITS.tinyArcher, "denfenerOfSource"),
-  new ClassUnit(DEFUALT_UNITS.workCreepMoveSpeed, "mysideSecendSourceWorker"),
-  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
+  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfSource", "", false, true),
+
+  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfEnemysideSource", "", false, true),
+  new ClassUnit(DEFUALT_UNITS.workCreepMoveSpeed, "mysideSecendSourceWorker", "", false, true),
+  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfMysideSource", "", false, true),
   // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
   // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
@@ -63,9 +72,9 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.smallHealer, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
-  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfMysideSource"),
-  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfEnemysideSource"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false, true),
+
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false, true),
   new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer"),
   // new ClassUnit(DEFUALT_UNITS.workCreepMove, "workCreepMove"),// 准备开分矿
 
@@ -82,7 +91,7 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1")
+  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1", true)
 ];
 
 /**
@@ -106,13 +115,14 @@ export function loop(): void {
   const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
   const enemySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my) as StructureSpawn;
   const enemyRamparts = getObjectsByPrototype(StructureRampart).filter(c => !c.my);
-
   const { creepsInRamparts: enemysInRam, creepsNotInRamparts: enemysNotInRam } = splitCreepsInRamparts(
     enemys,
     enemyRamparts
   );
 
   // console.log(`enemysInRam:`, enemysInRam, `enemysNotInRam:`, enemysNotInRam);
+
+  const myCreeps = getObjectsByPrototype(Creep).filter(c => c.my);
 
   const workers = unitList.filter(e => e.name === "carryCreep" || e.name === "puller");
   const mySource = findClosestByRange(mySpawn, getObjectsByPrototype(Source));
@@ -125,6 +135,40 @@ export function loop(): void {
   const carryCreep2 = unitList.find(e => e.name === "carryCreep2");
   const tinyFootMan = unitList.find(e => e.name === "tinyFootMan");
 
+  // 将单位按位置分组并打印
+  console.log("Enemy Battle Units:");
+  interface IGourpCreep {
+    groups: Creep[][];
+    centers: RoomPosition[];
+  }
+  const enemyBattleGroups = splitCreepByPosition(enemys.filter(hasBattleParts));
+  console.log("My Battle Units:");
+  const myBattleGroups = splitCreepByPosition(myCreeps.filter(hasBattleParts));
+  calculateBattleRange(myBattleGroups, enemyBattleGroups);
+
+  function calculateBattleRange(creepGroups: IGourpCreep, enemyGroups: IGourpCreep, limitRange = 15) {
+    const battlePair = [];
+    for (let i = 0; i < creepGroups.groups.length; i++) {
+      const group = creepGroups.groups[i];
+      const center = creepGroups.centers[i];
+      for (let j = 0; j < enemyGroups.groups.length; j++) {
+        const enemyGroup = enemyGroups.groups[j];
+        const enemyCenter = enemyGroups.centers[j];
+        const range = getRange(center, enemyCenter);
+        if (range <= limitRange) {
+          console.log(`接战警报 DANGEROUS range: ${range} for myGroup ${i} and enemyGroup ${j}`);
+          battlePair.push({
+            myGroup: group,
+            enemyGroup,
+            range
+          });
+        }
+      }
+    }
+
+    return battlePair;
+  }
+
   // 造兵逻辑
   spawnList(mySpawn, unitList);
   // 给所有可能的战斗单位添加单人攻击和奶的逻辑件
@@ -132,6 +176,11 @@ export function loop(): void {
     singleAttack(myUnit, enemys);
     singleHeal(myUnit, unitList);
   }
+
+  // 添加战斗用UI
+  addAttackRangeToCreeps(unitList);
+  addHitsLabelToCreeps(unitList);
+  enemys.forEach(e => showHealthBar(e));
 
   // 火车挖矿逻辑
   if (puller) {
@@ -405,7 +454,7 @@ export function loop(): void {
           creep.moveTo(collector);
         }
       } else {
-        const containers = getObjectsByPrototype(StructureContainer);
+        const containers = getObjectsByPrototype(StructureContainer).filter(c => c.store[RESOURCE_SCORE] > 0);
         if (containers.length > 0) {
           const container = creep.findClosestByRange(containers);
           if (container && creep.withdraw(container, RESOURCE_SCORE) === ERR_NOT_IN_RANGE) {

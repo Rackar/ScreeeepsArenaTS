@@ -28,9 +28,35 @@ import {
   RESOURCE_ENERGY,
   TOUGH,
   TOWER_RANGE,
-  WORK
+  WORK,
+  BODYPART_HITS
 } from "game/constants";
 // import { ClassUnit } from "./spawnUnit";
+
+// 各部件成本
+const COST_HASH = {
+  attack: 80,
+  ranged_attack: 150,
+  heal: 250,
+  work: 100,
+  carry: 50,
+  move: 50,
+  tough: 10,
+  claim: 600
+};
+
+// 模拟战力表，第一版
+const BATTLE_HASH = {
+  attack: 30 * 0.2, // 近战经常打不到
+  ranged_attack: 10,
+  heal: 12 * 0.4, // 治疗权重放弱
+  work: 0,
+  carry: 0,
+  move: 4,
+  tough: 2,
+  claim: 0
+};
+
 /**
  * 将数组分为两边 检查哪些单位进入了特点坐标点群，如地堡
  * @param creeps
@@ -56,13 +82,13 @@ function splitCreepsInRamparts(creeps: Creep[], ramparts: RoomPosition[]) {
 /**
  * 根据最大距离连接并拆为分组
  * @param creeps 带分组列表
- * @param range 最大距离
+ * @param range 最大拆分距离，默认10
  * @returns
  */
-function splitCreepByPosition(creeps: Creep[], range = 6): { results: Creep[][] } {
-  const groups = [];
+function splitCreepByPosition(creeps: Creep[], range = 10): { groups: Creep[][]; centers: RoomPosition[] } {
+  const flatGroups = [];
 
-  // 粗聚类
+  // 粗聚类，将creep在range范围内各自聚类
   for (let i = 0; i < creeps.length; i++) {
     const creepsGroup: Creep[] = [];
     const element = creeps[i];
@@ -82,11 +108,12 @@ function splitCreepByPosition(creeps: Creep[], range = 6): { results: Creep[][] 
       }
     }
 
-    groups.push(creepsGroup);
+    flatGroups.push(creepsGroup);
   }
 
+  // 将各聚类按距离连接成大聚类，并去重
   const results: Creep[][] = [];
-  for (const group of groups) {
+  for (const group of flatGroups) {
     let pushed = false;
     for (const result of results) {
       if (result.some(creep => group.includes(creep))) {
@@ -106,7 +133,78 @@ function splitCreepByPosition(creeps: Creep[], range = 6): { results: Creep[][] 
     }
   }
 
-  return { results };
+  console.log(`Units groups: ${results.length}`);
+
+  // 计算每个聚类的中心坐标
+  const centers = [];
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    const pos = calculateCenterOfCreeps(result);
+    const { cost, battleValue } = calcCostAndBattleValue(result);
+    console.log(
+      `---Group ${i} has creeps: ${result.length},battle value: ${battleValue}, cost: ${cost}  center:${pos.x}, ${pos.y}`
+    );
+    centers.push(pos);
+  }
+
+  console.log("---------------------------");
+  return { groups: results, centers };
+}
+
+/**
+ * 返回小队的中心坐标
+ * @param creeps 待计算单位列表
+ * @returns RoomPosition:{x,y}
+ */
+function calculateCenterOfCreeps(creeps: Creep[]): RoomPosition {
+  const x = toFixedNumber(creeps.reduce((sum, creep) => sum + creep.x, 0) / creeps.length);
+  const y = toFixedNumber(creeps.reduce((sum, creep) => sum + creep.y, 0) / creeps.length);
+
+  return { x, y };
+}
+
+export function hasBattleParts(creep: Creep) {
+  return creep.body.some(b => b.type === "attack" || b.type === "ranged_attack" || b.type === "heal");
+}
+
+/**
+ * 计算一组单位的成本和战力
+ * @param creeps 单位组或者单个单位
+ * @returns cost:单位总建造成本 battlevalue:单位总战斗力
+ */
+export function calcCostAndBattleValue(creeps: Creep | Creep[]) {
+  if (!Array.isArray(creeps)) {
+    creeps = [creeps];
+  }
+
+  let cost = 0;
+  let leftCost = 0;
+  let battleValue = 0;
+
+  for (const creep of creeps) {
+    for (const bodyPart of creep.body) {
+      const { type, hits } = bodyPart;
+
+      cost += COST_HASH[type];
+      if (hits) {
+        battleValue += (BATTLE_HASH[type] * hits) / BODYPART_HITS;
+        leftCost += (COST_HASH[type] * hits) / BODYPART_HITS;
+      }
+    }
+  }
+
+  return { cost, battleValue: toFixedNumber(battleValue), leftCost: toFixedNumber(leftCost) };
+}
+
+/**
+ * 保留几位小数
+ * @param num
+ * @param times 位数，默认保留1位
+ * @returns
+ */
+export function toFixedNumber(num: number, times = 1): number {
+  const temp = 10 ** times;
+  return Math.round(num * temp) / temp;
 }
 
 /**
@@ -139,11 +237,13 @@ function filterAimsInRangeAndSort<T extends RoomPosition>(pos: RoomPosition, aim
  * @returns 返回有侵入情况
  */
 function alertInRange(center: RoomPosition, checkAims: RoomPosition[], range: number) {
-  for (const aim of checkAims) {
-    console.log(getRange(center, aim));
+  const alert = checkAims.some(aim => getRange(center, aim) < range);
+
+  if (alert) {
+    console.log(`单位入侵警告，到${center.x},${center.y}距离${range}之内遇敌`);
   }
 
-  return checkAims.some(aim => getRange(center, aim) < range);
+  return alert;
 }
 
 /**
@@ -154,7 +254,7 @@ function alertInRange(center: RoomPosition, checkAims: RoomPosition[], range: nu
  * @returns  true表示拉完了
  */
 function pullCreepTo(puller: Creep, bePulled: Creep, targetPos: Pos): boolean {
-  console.log(puller, bePulled, targetPos);
+  // console.log(puller, bePulled, targetPos);
   if (getRange(bePulled, targetPos) !== 0) {
     if (getRange(puller, targetPos) !== 0) {
       puller.pull(bePulled);
@@ -181,4 +281,13 @@ function repeatArray<T>(array: T[], times: number) {
   return result;
 }
 
-export { splitCreepsInRamparts, alertInRange, pullCreepTo, repeatArray, checkIfInRampart, filterAimsInRangeAndSort };
+export {
+  splitCreepsInRamparts,
+  alertInRange,
+  pullCreepTo,
+  repeatArray,
+  checkIfInRampart,
+  filterAimsInRangeAndSort,
+  splitCreepByPosition,
+  calculateCenterOfCreeps
+};

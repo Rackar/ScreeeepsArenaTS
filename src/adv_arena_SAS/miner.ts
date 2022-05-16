@@ -282,7 +282,7 @@ function getWildSource(worker: ClassUnit, sources: Source[], mySpawn: StructureS
     workerObj.transfer(mySpawn, RESOURCE_ENERGY);
   }
 
-  console.log(worker);
+  // console.log(worker);
 
   if (worker.aim) {
     switch (worker.aim.status) {

@@ -35,7 +35,7 @@ import { withdrawClosestContainer, getWildSource } from "./units/miner";
 import { checkAim } from "./units/rider";
 import { spawnList, ClassUnit, DEFUALT_UNITS } from "../utils/spawnUnit";
 import { remoteAttackAndRun, addDoctorMoveLogic } from "../utils/battle";
-import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../utils/ui";
+import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad, showHealthBar } from "../utils/ui";
 
 import { addPeopleUi } from "../utils/uiCreep";
 import { singleAttack, singleHeal } from "../utils/1single/attack";
@@ -57,7 +57,7 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.smallCarryer, "smallCarryer"), // 3c2w 340tick出动 刚好用尽资源
   // new ClassUnit(DEFUALT_UNITS.smallCarryer, "smallCarryer"), // 4c2w 430tick出动
   new ClassUnit(DEFUALT_UNITS.smallWorker, "smallWorker"),
-  new ClassUnit(DEFUALT_UNITS.rider, "rider"),
+  new ClassUnit(DEFUALT_UNITS.rider, "rider", "rider", false, true),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "smallArcher", "atk1"),
@@ -98,7 +98,7 @@ export function loop() {
   // 添加战斗用UI
   addAttackRangeToCreeps(unitList);
   addHitsLabelToCreeps(unitList);
-
+  enemys.forEach(e => showHealthBar(e));
   // 建塔后发起进攻
   // if (myUnits && myUnits.length > 0) {
   //     startAttack = true

@@ -28,7 +28,7 @@ const DEFUALT_UNITS = {
   tinyFootMan: [MOVE, ATTACK],
   miniFootMan: [MOVE, MOVE, MOVE, ATTACK],
   footMan: [MOVE, MOVE, ATTACK, ATTACK, MOVE, ATTACK],
-  rider: [MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK],
+  rider: [MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK],
   fastTank: [
     TOUGH,
     TOUGH,
@@ -116,7 +116,8 @@ class ClassUnit implements IUnit {
   public aim?: { obj?: StructureContainer | Source; status: string } | null;
   public vis?: Visual;
   public rebirthtime = 0;
-  public constructor(bodys: BodyPartConstant[], name: string, group?: string, repeat?: boolean) {
+  public justOnce = false;
+  public constructor(bodys: BodyPartConstant[], name: string, group?: string, repeat?: boolean, justOnce = false) {
     // 构造函数
     this.bodys = bodys;
     this.name = name || "";
@@ -124,6 +125,7 @@ class ClassUnit implements IUnit {
     this.repeat = repeat || false;
     this.init = false;
     this.queueUniqueIds = [];
+    this.justOnce = justOnce;
   }
 
   public get alive(): boolean {
@@ -183,12 +185,11 @@ class ClassUnit implements IUnit {
       console.log(`添加任务成功：${uniqueId}`);
     }
   }
+
   /**
    * 组合initQueue和runQueue
    * @param queues 任务队列
-   */
-
-  public initQueueAndRun(queues: IQueueItem[]) {
+   */ public initQueueAndRun(queues: IQueueItem[]) {
     if (this.checkSpawned()) {
       this.initQueues(queues, `${this.name}-${this.rebirthtime}`);
     }
@@ -364,7 +365,8 @@ function checkSpawnedPos(x: number, y: number): boolean {
 
 function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
   const unit = unitsList.find(unit1 => !unit1.object || !unit1.alive);
-  if (unit) {
+  if (unit && (!unit.justOnce || (unit.justOnce && unit.rebirthtime === 0))) {
+    // 添加个别任务单位只生产一次，死了不再重复生产
     const newUnit = mySpawn.spawnCreep(unit.bodys).object;
     if (newUnit) {
       // console.log("新生产单位", newUnit);

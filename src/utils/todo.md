@@ -3,6 +3,8 @@
 
 - [x] 发现bug。ClassUnit的第二次生产时不会触发任务序列初始化，因为已经init过了。将执行序列放置外层，方便判断角色死亡清空和重新初始化。搞定
 
+SAS紧急修复：一个地堡一个a回防
+
 CAC FAME得key。
 一个近战骚扰，一个小c去抢运，然后一小队防守矿池，一小队巡逻野外，一个远程兵守家
 
@@ -16,6 +18,8 @@ CAC FAME得key。
 
 分数挖矿存在目标被己方其他工人搬空，导致个别卡死
 
+已可以计算团队和中心点，下步看看计算战力和费用，判断是否战斗能打赢。
+
 ## 其他优化计划
 ### UI方面
 增加敌我单位数量和血条指示，增加攻击和移动目标线条。
@@ -23,7 +27,7 @@ CAC FAME得key。
 ### 通用战斗模块方面
 继续抽取公共部分，提炼各模式可用的纯函数
 
-### CAS 基础模式
+### CAC 基础模式
 重点编写抽取敌方矿，开二矿并防御，游走骚扰农民等策略，尽早拿到红色进阶key
 
 ### SAS 基础模式
@@ -84,3 +88,11 @@ CAC FAME得key。
 
  队伍生产配置
  配置单位类型，数量，顺序，团队名，各级策略配置
+
+
+录像加快1tick，同步UI动画方法：
+游戏主目录D:\Program Files (x86)\Steam\steamapps\common\ScreepsArena\resources\app\dist\main.js
+查找一处
+_replayStateSrv.getTick(tick)
+替换为
+_replayStateSrv.getTick(tick-1)
