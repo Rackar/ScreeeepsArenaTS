@@ -117,7 +117,7 @@ export function loop() {
   }
 
   // 判断如果造兵数量不足 但是战力足够已消灭部分敌人，则发起进攻
-  if (totalKilled > 5 || getTicks() >= 1600) {
+  if (totalKilled > 5 || getTicks() >= 1400) {
     startAttack = true;
   }
 

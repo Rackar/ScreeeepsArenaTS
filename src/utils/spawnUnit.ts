@@ -90,7 +90,14 @@ interface IUnit {
 interface IQueueItem {
   me?: Creep | null;
   unitName?: string;
-  flag: "moveToPosByRange" | "moveToUnitByRange" | "staySomeTime" | "callback" | "clearQueue" | "denfenseAimWithRange";
+  flag:
+    | "moveToPosByRange"
+    | "moveToUnitByRange"
+    | "staySomeTime"
+    | "callback"
+    | "clearQueue"
+    | "denfenseAimWithRange"
+    | "moveAndFight";
   comment?: string;
   aim?: Creep | { x: number; y: number };
   range?: number;
@@ -256,6 +263,24 @@ class ClassUnit implements IUnit {
 
             break;
           }
+
+          case "moveAndFight":
+            if (item.me && item.aim && item.range) {
+              const range = getRange(item.me, item.aim);
+              console.log(`moveToPos:${item.aim.x},${item.aim.y}, range: ${range}`);
+              if (range < item.range) {
+                this.queue.shift();
+                this.runQueue();
+              } else {
+                // remoteAttackAndRun(item.me, enemy, enemys);
+                // 如果小队附近15内有地方单位，则放任开火
+                // 如果没有，则扩大搜索范围25找无保护农民
+                // 都没有，则去目的地
+                item.me.moveTo(item.aim);
+              }
+            }
+
+            break;
 
           case "staySomeTime": {
             if (item.me && item.stayTime) {
