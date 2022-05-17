@@ -5,7 +5,8 @@ import {
   getTicks,
   getObjectById,
   findClosestByRange,
-  getRange
+  getRange,
+  getDirection
 } from "game/utils";
 import {
   ConstructionSite,
@@ -687,4 +688,9 @@ function sortSites<T extends BuildableStructure>(sites: ConstructionSite<T>[], x
   } else {
     return second;
   }
+}
+
+function moveAway(creep: Creep, enemy: Creep) {
+  const direction = getDirection(enemy.x - creep.x, enemy.y - creep.y);
+  const move = creep.move(direction);
 }
