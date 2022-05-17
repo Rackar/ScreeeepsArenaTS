@@ -59,12 +59,12 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.smallCarryer, "scoreCarryer", "a", false, true),
   new ClassUnit(DEFUALT_UNITS.workerForRampart, "workerForRampart", "a", false, true),
   // new ClassUnit(DEFUALT_UNITS.tinyFootMan, " ", "", false, true),
-  new ClassUnit(DEFUALT_UNITS.smallFootMan, "denfenerOfRampartBuilder", "a", false, true),
+  // new ClassUnit(DEFUALT_UNITS.smallFootMan, "denfenerOfRampartBuilder", "a", false, true),
   new ClassUnit(DEFUALT_UNITS.powerArcher, "powerArcher", "raG1", false, true),
 
   // new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfRampartBuilder", "", false, true),
   // new ClassUnit(DEFUALT_UNITS.workCreepMoveSpeed, "mysideSecendSourceWorker", "", false, true), // 分矿农民
-  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfMysideSource", "a", false, true),
+  // new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfMysideSource", "a", false, true),
   // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
   // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
@@ -73,12 +73,13 @@ const unitList: ClassUnit[] = [
   // new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfBase", "raG1"),
 
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "a", false, true),
+
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
 
   new ClassUnit(DEFUALT_UNITS.smallHealer, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "a", false, true),
   // new ClassUnit(DEFUALT_UNITS.workCreepMove, "workCreepMove"),// 准备开分矿
-  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false, false),
+  // new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false, false),
   // 手动repeat
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false),

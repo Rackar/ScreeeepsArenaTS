@@ -17,8 +17,8 @@ import { checkIfInRampart, filterAimsInRangeAndSort } from "./pureHelper";
 import { remoteAttackAndRun } from "./battle";
 
 const DEFUALT_UNITS = {
-  smallCarryer: [MOVE, CARRY],
-  smallWorker: [MOVE, WORK, CARRY],
+  smallCarryer: [CARRY, MOVE],
+  smallWorker: [CARRY, MOVE, WORK],
   carryCreep: [WORK, WORK, WORK, CARRY],
   workCreepMove: [CARRY, WORK, WORK, WORK, MOVE],
   workCreepMoveSpeed: [CARRY, WORK, WORK, WORK, MOVE, MOVE, MOVE],
