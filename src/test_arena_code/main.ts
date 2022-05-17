@@ -9,8 +9,8 @@ import { singleAttack, singleHeal } from "../utils/1single/attack";
 const unitList: ClassUnit[] = [];
 
 export function loop() {
-  const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
-  const enemyFlag = getObjectsByPrototype(Flag).find(c => !c.my);
+  const enemys = getObjectsByPrototype(Creep).filter(c => c.my === false);
+  const enemyFlag = getObjectsByPrototype(Flag).find(c => c.my === false);
   const myUnits = getObjectsByPrototype(Creep).filter(c => c.my);
 
   if (getTicks() === 1) {

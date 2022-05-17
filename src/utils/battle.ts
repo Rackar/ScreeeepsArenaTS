@@ -6,7 +6,15 @@ import {
   getObjectById,
   getRange
 } from "game/utils";
-import { ConstructionSite, Creep, Source, StructureContainer, StructureSpawn, StructureTower } from "game/prototypes";
+import {
+  ConstructionSite,
+  Creep,
+  OwnedStructure,
+  Source,
+  StructureContainer,
+  StructureSpawn,
+  StructureTower
+} from "game/prototypes";
 import {
   ATTACK,
   CARRY,
@@ -55,7 +63,16 @@ function remoteAttackAndRun(archer: Creep, enemy: Creep, enemys: Creep[]) {
     }
   }
 
-  const info = archer.rangedAttack(enemy);
+  const enemyBuildings = getObjectsByPrototype(OwnedStructure).filter(c => c.my === false && getRange(archer, c) <= 3);
+  const enemyNearby = enemys.filter(c => getRange(archer, c) <= 3);
+  let info;
+  if (enemyBuildings.length + enemyNearby.length > 3) {
+    info = archer.rangedMassAttack();
+  } else {
+    info = archer.rangedAttack(enemy);
+  }
+
+  // const info = archer.rangedAttack(enemy);
   if (info === OK) {
     const closestEnemy = archer.findClosestByRange(enemys);
     if (closestEnemy && closestEnemy.body.some(b => b.type === "attack")) {

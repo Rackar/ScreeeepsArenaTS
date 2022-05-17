@@ -16,7 +16,9 @@ import {
   StructureExtension,
   StructureSpawn,
   StructureTower,
-  Resource
+  Resource,
+  StructureRampart,
+  RoomPosition
 } from "game/prototypes";
 import {
   ATTACK,
@@ -29,7 +31,8 @@ import {
   RESOURCE_ENERGY,
   TOUGH,
   TOWER_RANGE,
-  WORK
+  WORK,
+  BuildableStructure
 } from "game/constants";
 
 import { spawnList, ClassUnit } from "../spawnUnit";
@@ -66,7 +69,7 @@ function checkEnemyOrder(enemys: Creep[]) {
 function findStructureInRange(unit: ClassUnit, structures: OwnedStructure[], range = 1): OwnedStructure[] {
   if (unit.object) {
     const obj = unit.object;
-    const creepsInRange = structures.filter(i => !i.my && getRange(obj, i) <= range);
+    const creepsInRange = structures.filter(i => i.my === false && getRange(obj, i) <= range);
     return creepsInRange;
   } else {
     return [];
@@ -184,4 +187,21 @@ function singleHeal(unit: ClassUnit, myUnits: ClassUnit[]): boolean {
   return false;
 }
 
-export { singleAttack, singleHeal };
+function donotStayOnMyUnfinishedSite(creep: Creep) {
+  const thissite = getObjectsByPrototype(ConstructionSite).find(
+    i => i.x === creep.x && i.y === creep.y && i.progress < i.progressTotal && i.my
+  );
+
+  if (thissite && !(thissite.structure instanceof StructureRampart)) {
+    for (let i = -1; i < 2; i++) {
+      for (let j = -1; j < 2; j++) {
+        const pos: RoomPosition = { x: creep.x + i, y: creep.y + j };
+        if (creep.moveTo(pos) === OK) {
+          return;
+        }
+      }
+    }
+  }
+}
+
+export { singleAttack, singleHeal, donotStayOnMyUnfinishedSite };

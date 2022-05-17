@@ -11,8 +11,7 @@ import {
   GameObject,
   Structure
 } from "game/prototypes";
-import { getRange } from "game/utils";
-import { getObjectsByPrototype } from "game";
+import { getRange, getObjectsByPrototype } from "game/utils";
 
 import { checkIfInRampart, filterAimsInRangeAndSort } from "./pureHelper";
 import { remoteAttackAndRun } from "./battle";
@@ -23,10 +22,12 @@ const DEFUALT_UNITS = {
   carryCreep: [WORK, WORK, WORK, CARRY],
   workCreepMove: [CARRY, WORK, WORK, WORK, MOVE],
   workCreepMoveSpeed: [CARRY, WORK, WORK, WORK, MOVE, MOVE, MOVE],
+  workerForRampart: [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, MOVE, CARRY, MOVE, WORK],
 
   fastCarryer: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE],
   tinyFootMan: [MOVE, ATTACK],
   miniFootMan: [MOVE, MOVE, MOVE, ATTACK],
+  smallFootMan: [MOVE, ATTACK, MOVE, ATTACK],
   footMan: [MOVE, MOVE, ATTACK, ATTACK, MOVE, ATTACK],
   rider: [MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK],
   fastTank: [
@@ -76,6 +77,18 @@ const DEFUALT_UNITS = {
 
   tinyArcher: [MOVE, RANGED_ATTACK],
   smallArcher: [MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, RANGED_ATTACK],
+  powerArcher: [
+    MOVE,
+    MOVE,
+    MOVE,
+    MOVE,
+    MOVE,
+    RANGED_ATTACK,
+    RANGED_ATTACK,
+    RANGED_ATTACK,
+    RANGED_ATTACK,
+    RANGED_ATTACK
+  ],
   smallHealer: [MOVE, MOVE, MOVE, MOVE, MOVE, HEAL, MOVE, MOVE, HEAL]
 };
 interface IUnit {
@@ -91,13 +104,13 @@ interface IQueueItem {
   me?: Creep | null;
   unitName?: string;
   flag:
-    | "moveToPosByRange"
-    | "moveToUnitByRange"
-    | "staySomeTime"
-    | "callback"
-    | "clearQueue"
-    | "denfenseAimWithRange"
-    | "moveAndFight";
+  | "moveToPosByRange"
+  | "moveToUnitByRange"
+  | "staySomeTime"
+  | "callback"
+  | "clearQueue"
+  | "denfenseAimWithRange"
+  | "moveAndFight";
   comment?: string;
   aim?: Creep | { x: number; y: number };
   range?: number;
@@ -123,8 +136,8 @@ class ClassUnit implements IUnit {
   public aim?: { obj?: StructureContainer | Source; status: string } | null;
   public vis?: Visual;
   public rebirthtime = 0;
-  public justOnce = false;
-  public constructor(bodys: BodyPartConstant[], name: string, group?: string, repeat?: boolean, justOnce = false) {
+  public justOnce?: boolean;
+  public constructor(bodys: BodyPartConstant[], name: string, group?: string, repeat?: boolean, justOnce?: boolean) {
     // 构造函数
     this.bodys = bodys;
     this.name = name || "";
@@ -132,7 +145,7 @@ class ClassUnit implements IUnit {
     this.repeat = repeat || false;
     this.init = false;
     this.queueUniqueIds = [];
-    this.justOnce = justOnce;
+    this.justOnce = justOnce || false;
   }
 
   public get alive(): boolean {
@@ -229,8 +242,7 @@ class ClassUnit implements IUnit {
     if (this.queue.length) {
       const item = this.queue[0];
       console.log(
-        `执行任务：${item.me?.id as string} ${this.queueUniqueIds[this.queueUniqueIds.length - 1]}---${
-          item.comment || item.flag
+        `执行任务：${item.me?.id as string} ${this.queueUniqueIds[this.queueUniqueIds.length - 1]}---${item.comment || item.flag
         }`
       );
       if (item && item.flag) {
@@ -299,7 +311,7 @@ class ClassUnit implements IUnit {
             const { me, aim, range, stayInRampart } = item;
             if (me && aim && range) {
               const enemys = getObjectsByPrototype(Creep)
-                .filter(c => !c.my)
+                .filter(c => c.my === false)
                 .filter(c => getRange(c, aim) < range);
               if (enemys.length) {
                 me.moveTo(enemys[0]);
@@ -307,10 +319,10 @@ class ClassUnit implements IUnit {
                   remoteAttackAndRun(me, enemys[0], enemys);
                 }
               } else {
-                const x = aim.x < 50 ? aim.x + 2 : aim.x - 2;
-                const y = aim.y < 50 ? aim.y + 2 : aim.y - 2;
                 // 集结到aim会堵塞，放在2格外
-                me.moveTo({ x, y });
+                if (getRange(me, aim) > 2) {
+                  me.moveTo(aim);
+                }
               }
 
               if (stayInRampart) {
@@ -359,7 +371,9 @@ class ClassUnit implements IUnit {
 }
 
 function keepInRam(creep: Creep, ramparts: StructureRampart[], savetyMoveRange = 5) {
-  if (checkIfInRampart(creep, ramparts)) {
+  const creeps = getObjectsByPrototype(Creep);
+  // creeps.some(creep => checkIfInRampart(creep, ramparts));
+  if (creeps.some(creepIn => checkIfInRampart(creepIn, ramparts))) {
     return true;
   } else {
     const aims = filterAimsInRangeAndSort(creep, ramparts, savetyMoveRange);
@@ -389,12 +403,16 @@ function checkSpawnedPos(x: number, y: number): boolean {
 }
 
 function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
-  const unit = unitsList.find(unit1 => !unit1.object || !unit1.alive);
-  if (unit && (!unit.justOnce || (unit.justOnce && unit.rebirthtime === 0))) {
+  const unit = unitsList.find(
+    unit1 => (!unit1.object || !unit1.alive) && (!unit1.justOnce || (unit1.justOnce && unit1.rebirthtime === 0))
+  );
+
+  console.log("造兵谜题", unit);
+  if (unit) {
     // 添加个别任务单位只生产一次，死了不再重复生产
     const newUnit = mySpawn.spawnCreep(unit.bodys).object;
     if (newUnit) {
-      // console.log("新生产单位", newUnit);
+      console.log("新生产单位", newUnit);
       unit.object = newUnit;
     }
   } else {
@@ -403,7 +421,13 @@ function spawnList(mySpawn: StructureSpawn, unitsList: ClassUnit[]) {
     const repeatUnit = unitsList.find(unit1 => unit1.repeat);
     // console.log("repeat found", repeatUnit);
     if (repeatUnit) {
-      mySpawn.spawnCreep(repeatUnit.bodys);
+      const repeatU = new ClassUnit(repeatUnit.bodys, repeatUnit.name, repeatUnit.group);
+      unitsList.push(repeatU);
+      const newUnit = mySpawn.spawnCreep(repeatU.bodys).object;
+      if (newUnit) {
+        // console.log("新生产单位", newUnit);
+        repeatU.object = newUnit;
+      }
     }
   }
 }

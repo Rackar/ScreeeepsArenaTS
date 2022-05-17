@@ -101,6 +101,7 @@ function addAttackRangeToCreeps(creepUNits: ClassUnit[]) {
     if (creep) {
       let mAttack = false;
       let rAttack = false;
+      let heal = false;
       if (!creep.exists || !creep.hits) {
         if (creepUnit.attackRangeVisual) {
           creepUnit.attackRangeVisual.clear();
@@ -124,6 +125,10 @@ function addAttackRangeToCreeps(creepUNits: ClassUnit[]) {
         rAttack = true;
       }
 
+      if (creep.body.some(i => i.type === HEAL)) {
+        heal = true;
+      }
+
       if (mAttack) {
         creepUnit.attackRangeVisual.rect({ x: creep.x - 1, y: creep.y - 1 }, 2, 2, {
           stroke: "#DD0000",
@@ -136,6 +141,15 @@ function addAttackRangeToCreeps(creepUNits: ClassUnit[]) {
       if (rAttack) {
         creepUnit.attackRangeVisual.rect({ x: creep.x - 3, y: creep.y - 3 }, 6, 6, {
           stroke: "#0000DD",
+          opacity: 0.1,
+          lineStyle: "solid",
+          fill: "#AAAAAA"
+        });
+      }
+
+      if (heal) {
+        creepUnit.attackRangeVisual.rect({ x: creep.x - 3, y: creep.y - 3 }, 6, 6, {
+          stroke: "#00FF00",
           opacity: 0.1,
           lineStyle: "solid",
           fill: "#AAAAAA"

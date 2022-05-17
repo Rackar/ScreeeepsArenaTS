@@ -85,9 +85,9 @@ export function loop() {
   // const source = getObjectsByPrototype(Source).find(s => s.energy > 0)
   const sources = getObjectsByPrototype(StructureContainer).filter(s => s.store[RESOURCE_ENERGY] > 0);
 
-  const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
+  const enemys = getObjectsByPrototype(Creep).filter(c => c.my === false);
 
-  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my) as StructureSpawn;
+  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(c => c.my === false) as StructureSpawn;
   const carryers = getObjectsByPrototype(Creep).filter(
     c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type !== "work")
   );
@@ -171,7 +171,7 @@ export function loop() {
             comment: "findAndKillCarryer",
             jobFunction: () => {
               if (tinyFootMan && tinyFootManObj) {
-                const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+                const enemyss = getObjectsByPrototype(Creep).filter(c => c.my === false);
 
                 const enemyCarryersOutside = enemyss.filter(e => e.body && e.body.some(b => b.type === "carry"));
                 console.log("enemyCarryersOutside", enemyCarryersOutside.length);
@@ -183,7 +183,7 @@ export function loop() {
               }
             },
             stopFunction: () => {
-              const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+              const enemyss = getObjectsByPrototype(Creep).filter(c => c.my === false);
               const enemyAtks = enemyss.filter(
                 e => e.body && (e.body.some(b => b.type === "attack") || e.body.some(b => b.type === "ranged_attack"))
               );

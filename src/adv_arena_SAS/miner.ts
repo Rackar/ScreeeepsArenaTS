@@ -4,7 +4,8 @@ import {
   getObjectsByPrototype,
   getTicks,
   findPath,
-  getObjectById
+  getObjectById,
+  getRange
 } from "game/utils";
 import {
   ConstructionSite,
@@ -33,7 +34,6 @@ import {
 } from "game/constants";
 
 import { spawnList, ClassUnit } from "../utils/spawnUnit";
-import { getRange } from "game";
 
 const pickedContainerIds: string[] = [];
 const workerRangeCache = {
@@ -250,8 +250,8 @@ function checkTowerRush(worker: ClassUnit) {
   }
 
   // 开造基地后检查。
-  const enemyBase = getObjectsByPrototype(StructureSpawn).find(c => !c.my);
-  const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
+  const enemyBase = getObjectsByPrototype(StructureSpawn).find(c => c.my === false);
+  const enemys = getObjectsByPrototype(Creep).filter(c => c.my === false);
   if (!enemyBase && enemys && enemys.length === 1) {
     // 要小心可能是towerrush或者堵墙
     const range = getRange(workerObj, enemys[0]);

@@ -48,7 +48,7 @@ import {
   splitCreepByPosition,
   hasBattleParts
 } from "../utils/pureHelper";
-import { singleAttack, singleHeal } from "../utils/1single/attack";
+import { singleAttack, singleHeal, donotStayOnMyUnfinishedSite } from "../utils/1single/attack";
 import { prebuildConstructionSites } from "../utils/1single/worker";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps, showHealthBar } from "utils/ui";
 
@@ -56,46 +56,34 @@ const unitList: ClassUnit[] = [
   new ClassUnit(DEFUALT_UNITS.smallCarryer, "puller"),
   new ClassUnit(DEFUALT_UNITS.carryCreep, "carryCreep1"),
   new ClassUnit(DEFUALT_UNITS.carryCreep, "carryCreep2"),
-  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "tinyFootMan"),
-  new ClassUnit(DEFUALT_UNITS.smallCarryer, "scoreCarryer"),
-  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfSource", "", false, true),
+  new ClassUnit(DEFUALT_UNITS.smallCarryer, "scoreCarryer", "a", false, true),
+  new ClassUnit(DEFUALT_UNITS.workerForRampart, "workerForRampart", "a", false, true),
+  // new ClassUnit(DEFUALT_UNITS.tinyFootMan, " ", "", false, true),
+  new ClassUnit(DEFUALT_UNITS.smallFootMan, "denfenerOfRampartBuilder", "a", false, true),
+  new ClassUnit(DEFUALT_UNITS.powerArcher, "powerArcher", "raG1", false, true),
 
-  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfEnemysideSource", "", false, true),
-  new ClassUnit(DEFUALT_UNITS.workCreepMoveSpeed, "mysideSecendSourceWorker", "", false, true),
-  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfMysideSource", "", false, true),
+  // new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfRampartBuilder", "", false, true),
+  // new ClassUnit(DEFUALT_UNITS.workCreepMoveSpeed, "mysideSecendSourceWorker", "", false, true), // 分矿农民
+  new ClassUnit(DEFUALT_UNITS.tinyFootMan, "denfenerOfMysideSource", "a", false, true),
   // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
   // new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfSource"),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
   // new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfBase", "raG1"),
   // new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfBase", "raG1"),
   // new ClassUnit(DEFUALT_UNITS.footMan, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallHealer, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false, true),
 
-  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false, true),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "a", false, true),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
+
   new ClassUnit(DEFUALT_UNITS.smallHealer, "denfenerOfBase", "raG1"),
   // new ClassUnit(DEFUALT_UNITS.workCreepMove, "workCreepMove"),// 准备开分矿
-
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false, false),
   // 手动repeat
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
   new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
-  new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1"),
+  new ClassUnit(DEFUALT_UNITS.fastCarryer, "scoreCarryer", "", false),
   new ClassUnit(DEFUALT_UNITS.smallArcher, "denfenerOfBase", "raG1", true)
 ];
 
@@ -117,9 +105,9 @@ export function loop(): void {
 
   const collector = getObjectsByPrototype(ScoreCollector)[0];
 
-  const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
-  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my) as StructureSpawn;
-  const enemyRamparts = getObjectsByPrototype(StructureRampart).filter(c => !c.my);
+  const enemys = getObjectsByPrototype(Creep).filter(c => c.my === false);
+  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(c => c.my === false) as StructureSpawn;
+  const enemyRamparts = getObjectsByPrototype(StructureRampart).filter(c => c.my === false);
   const { creepsInRamparts: enemysInRam, creepsNotInRamparts: enemysNotInRam } = splitCreepsInRamparts(
     enemys,
     enemyRamparts
@@ -182,10 +170,99 @@ export function loop(): void {
     singleHeal(myUnit, unitList);
   }
 
+  myCreeps.forEach(donotStayOnMyUnfinishedSite);
+
   // 添加战斗用UI
   addAttackRangeToCreeps(unitList);
   addHitsLabelToCreeps(unitList);
-  enemys.forEach(e => showHealthBar(e));
+  enemys.forEach(showHealthBar);
+
+  // 测试collector盖ram
+  const workerForRampart = unitList.find(e => e.name === "workerForRampart");
+  if (workerForRampart) {
+    if (workerForRampart.object) {
+      const worker = workerForRampart.object;
+      workerForRampart.initQueueAndRun([
+        {
+          flag: "callback",
+          comment: "harvest",
+
+          stopFunction: () => {
+            worker.moveTo(mySource);
+            worker.harvest(mySource);
+            if (worker.store.energy === 200) {
+              return true;
+            }
+
+            return false;
+          }
+        },
+        { flag: "moveToPosByRange", aim: collector, range: 1 },
+        {
+          flag: "callback",
+          comment: "buildSite",
+          stopFunction: () => {
+            prebuildConstructionSites(workerForRampart, StructureRampart, 1);
+            return true;
+          }
+        },
+        {
+          flag: "callback",
+          comment: "buildSite",
+          stopFunction: () => {
+            const site = getObjectsByPrototype(ConstructionSite).find(i => i.my && worker.getRangeTo(i) <= 1);
+            if (site) {
+              worker.build(site);
+              return false;
+            } else {
+              workerForRampart.name = "mysideSecendSourceWorker";
+              return true;
+            }
+          }
+        }
+      ]);
+    }
+  }
+
+  const powerArcher = unitList.find(e => e.name === "powerArcher");
+  if (powerArcher) {
+    powerArcher.initQueueAndRun([
+      { flag: "moveToPosByRange", aim: collector, range: 1 },
+      {
+        flag: "callback",
+        comment: "defense collecter",
+        jobFunction: () => {
+          const archer = powerArcher.object;
+          if (!archer) {
+            return;
+          }
+
+          const allEnemysInRange20 = getObjectsByPrototype(Creep).filter(
+            c => c.my === false && getRange(c, collector) <= 20
+          );
+
+          // 如果20范围内有农民没有战力，则出击，
+          if (allEnemysInRange20.length > 0) {
+            const enemy = allEnemysInRange20.find(c => c.body.some(i => i.type === ATTACK || i.type === RANGED_ATTACK));
+            if (enemy) {
+              archer.moveTo(collector);
+            } else {
+              const enemyWorker = allEnemysInRange20.find(
+                c => !c.body.some(i => i.type === ATTACK || i.type === RANGED_ATTACK)
+              );
+              if (enemyWorker) {
+                archer.moveTo(enemyWorker);
+                archer.rangedAttack(enemyWorker);
+              }
+            }
+          } else {
+            archer.moveTo(collector);
+          }
+          // 如果15范围内有战斗敌方，则回地堡
+        }
+      }
+    ]);
+  }
 
   // 火车挖矿逻辑
   if (puller) {
@@ -300,7 +377,7 @@ export function loop(): void {
             comment: "findAndKillCarryer",
             jobFunction: () => {
               if (tinyFootMan && tinyFootManObj) {
-                const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+                const enemyss = getObjectsByPrototype(Creep).filter(c => c.my === false);
                 const { creepsNotInRamparts } = splitCreepsInRamparts(enemyss, enemyRamparts);
                 const enemyCarryersOutside = creepsNotInRamparts.filter(
                   e => e.body && e.body.some(b => b.type === "carry")
@@ -314,7 +391,7 @@ export function loop(): void {
               }
             },
             stopFunction: () => {
-              const enemyss = getObjectsByPrototype(Creep).filter(c => !c.my);
+              const enemyss = getObjectsByPrototype(Creep).filter(c => c.my === false);
               const enemyAtks = enemyss.filter(
                 e => e.body && (e.body.some(b => b.type === "attack") || e.body.some(b => b.type === "ranged_attack"))
               );
@@ -390,20 +467,45 @@ export function loop(): void {
       },
       {
         flag: "denfenseAimWithRange",
-        aim: mySpawn,
+        aim: collector,
         range: 25,
         stayInRampart: true,
-        stayTime: 50
+        stayTime: 50,
+        stopFunction: () => {
+          const unitCount = denfeneresOfBase.filter(e => checkSpawned(e));
+          if (mySpawn) {
+            console.log("防守等待进攻信号,满7进攻。", unitCount.length, `防守目标${mySpawn.x},${mySpawn.y}`);
+          }
+
+          if (unitCount.length >= 7 || getTicks() > 500) {
+            console.log("造兵完成或满足500tick,退出防御状态,进入下一步", unitCount.length);
+            return true;
+          } else {
+            return false;
+          }
+        }
       },
+
       {
-        flag: "moveToPosByRange",
+        flag: "denfenseAimWithRange",
         aim: collector,
-        range: 5
+        range: 50,
+        stayInRampart: true,
+        stopFunction: () => {
+          const enemyBattleValue = enemyBattleGroups.battleValues.reduce((a, b) => a + b, 0);
+          const myBatttleValue = myBattleGroups.battleValues.reduce((a, b) => a + b, 0);
+          if (myBatttleValue > enemyBattleValue * 2 || myBatttleValue - enemyBattleValue >= 500) {
+            console.log("我方攻击力大于敌方,退出防御状态,进入下一步");
+            return true;
+          }
+
+          return false;
+        }
       },
       {
         flag: "denfenseAimWithRange",
         aim: collector,
-        range: 20,
+        range: 100,
         stayInRampart: true
       }
     ]);
@@ -419,12 +521,12 @@ export function loop(): void {
       {
         flag: "moveToPosByRange",
         aim: mySecendSource,
-        range: 3
+        range: 4
       },
       {
         flag: "denfenseAimWithRange",
         aim: mySecendSource,
-        range: 5,
+        range: 15,
         stayInRampart: true
       }
     ]);
@@ -449,10 +551,45 @@ export function loop(): void {
     ]);
   }
 
+  // 保卫建塔单位逻辑
+  const denfenerOfRampartBuilder = unitList.find(e => e.name === "denfenerOfRampartBuilder");
+  if (denfenerOfRampartBuilder) {
+    if (denfenerOfRampartBuilder.object && workerForRampart && workerForRampart.object && workerForRampart.alive) {
+      const aim = workerForRampart.object;
+      const range = 10;
+      const me = denfenerOfRampartBuilder.object;
+      const nearEnemys = getObjectsByPrototype(Creep)
+        .filter(c => c.my === false)
+        .filter(c => getRange(c, aim) < range);
+      if (nearEnemys.length) {
+        me.moveTo(nearEnemys[0]);
+        if (me.body && me.body.some(b => b.type === "ranged_attack")) {
+          remoteAttackAndRun(me, enemys[0], enemys);
+        }
+      } else {
+        // 集结到aim会堵塞，放在2格外
+        if (getRange(me, aim) > 2) {
+          me.moveTo(aim);
+        }
+      }
+    } else if (denfenerOfRampartBuilder.object && enemysNotInRam.length) {
+      denfenerOfRampartBuilder.object.moveTo(enemysNotInRam[0]);
+    }
+  }
+
   const carryers = unitList.filter(u => u.name === "scoreCarryer");
+  console.log("scoreCarryer num: ", carryers.filter(c => c.object && c.alive).length);
   for (const carryerUnit of carryers) {
     if (carryerUnit && carryerUnit.object && carryerUnit.alive) {
       const creep = carryerUnit.object;
+      const nearbyEnemy = enemys.find(
+        c => c.body.some(d => d.type === ATTACK || d.type === RANGED_ATTACK) && getRange(c, creep) < 7
+      );
+      if (nearbyEnemy) {
+        creep.moveTo(nearbyEnemy, { flee: true });
+        continue;
+      }
+
       if (creep.store[RESOURCE_SCORE] > 0) {
         const trans = creep.transfer(collector, RESOURCE_SCORE);
         if (trans === ERR_NOT_IN_RANGE) {
@@ -494,15 +631,6 @@ export function loop(): void {
         flag: "callback",
         comment: "harvestAndBuild",
         stopFunction: () => {
-          function sortSites<T extends BuildableStructure>(sites: ConstructionSite<T>[], x: number, y: number) {
-            const first = sites.find(i => i.x === x && i.y === y && i.structurePrototypeName === "rampart");
-            if (first) {
-              return first;
-            } else {
-              return sites[0];
-            }
-          }
-
           const worker = mysideSecendSourceWorker;
           const workerObj = worker.object;
           if (workerObj) {
@@ -512,11 +640,18 @@ export function loop(): void {
             const source = sources.find(i => getRange(i, workerObj) <= 1);
             if (source) {
               if (workerObj.store.getCapacity()) {
-                if (workerObj.store[RESOURCE_ENERGY] < (workerObj.store.getCapacity() as number) - 6) {
-                  workerObj.harvest(source);
-                } else {
-                  if (site) {
+                const worksNumber = workerObj.body.filter(i => i.type === WORK).length;
+                if (site) {
+                  // 加快建设进度
+                  if (workerObj.store[RESOURCE_ENERGY] < worksNumber * 5) {
+                    workerObj.harvest(source);
+                  } else {
                     workerObj.build(site);
+                  }
+                } else {
+                  // 最大节约回合
+                  if (workerObj.store[RESOURCE_ENERGY] < (workerObj.store.getCapacity() as number) - worksNumber * 2) {
+                    workerObj.harvest(source);
                   } else {
                     // 如果有空的扩展，就放资源进去
                     const extension = getObjectsByPrototype(StructureExtension).find(i => {
@@ -535,5 +670,20 @@ export function loop(): void {
         }
       }
     ]);
+  }
+}
+
+function sortSites<T extends BuildableStructure>(sites: ConstructionSite<T>[], x: number, y: number) {
+  const first = sites.find(i => i.x === x && i.y === y && i.structure instanceof StructureRampart);
+  const allCreeps = getObjectsByPrototype(Creep).filter(i => getRange(i, { x, y }) <= 1);
+
+  const second = sites.find(
+    i => i.structure instanceof StructureRampart || allCreeps.every(c => !(c.x === i.x && c.y === i.y))
+  );
+  console.log("sort secend", second);
+  if (first) {
+    return first;
+  } else {
+    return second;
   }
 }

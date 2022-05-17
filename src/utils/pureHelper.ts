@@ -85,7 +85,7 @@ function splitCreepsInRamparts(creeps: Creep[], ramparts: RoomPosition[]) {
  * @param range 最大拆分距离，默认10
  * @returns
  */
-function splitCreepByPosition(creeps: Creep[], range = 10): { groups: Creep[][]; centers: RoomPosition[] } {
+function splitCreepByPosition(creeps: Creep[], range = 10) {
   const flatGroups = [];
 
   // 粗聚类，将creep在range范围内各自聚类
@@ -137,6 +137,8 @@ function splitCreepByPosition(creeps: Creep[], range = 10): { groups: Creep[][];
 
   // 计算每个聚类的中心坐标
   const centers = [];
+  const costs = [];
+  const battleValues = [];
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
     const pos = calculateCenterOfCreeps(result);
@@ -145,10 +147,12 @@ function splitCreepByPosition(creeps: Creep[], range = 10): { groups: Creep[][];
       `---Group ${i} has creeps: ${result.length},battle value: ${battleValue}, cost: ${cost}  center:${pos.x}, ${pos.y}`
     );
     centers.push(pos);
+    costs.push(cost);
+    battleValues.push(battleValue);
   }
 
   console.log("---------------------------");
-  return { groups: results, centers };
+  return { groups: results, centers, costs, battleValues };
 }
 
 /**

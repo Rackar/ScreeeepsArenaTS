@@ -4,7 +4,8 @@ import {
   findClosestByRange,
   getObjectsByPrototype,
   getTicks,
-  getObjectById
+  getObjectById,
+  getRange
 } from "game/utils";
 import {
   ConstructionSite,
@@ -36,8 +37,6 @@ import { spawnList, ClassUnit, DEFUALT_UNITS } from "../utils/spawnUnit";
 import { remoteAttackAndRun, addDoctorMoveLogic } from "../utils/battle";
 import { addAttackRangeToCreeps, addHitsLabelToCreeps, initMapRoad } from "../utils/ui";
 import { singleAttack, singleHeal } from "utils/1single/attack";
-
-import { getRange } from "game";
 
 // 本版本ok
 // 坑1 Spawn初始化store为500，然后tick1变为300
@@ -84,9 +83,9 @@ export function loop() {
   const trueSources = getObjectsByPrototype(Source).filter(s => s.energy > 0);
   // const sources = getObjectsByPrototype(StructureContainer).filter(s => s.store[RESOURCE_ENERGY] > 0);
 
-  const enemys = getObjectsByPrototype(Creep).filter(c => !c.my);
+  const enemys = getObjectsByPrototype(Creep).filter(c => c.my === false);
 
-  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(c => !c.my);
+  const enemySpawn = getObjectsByPrototype(StructureSpawn).find(c => c.my === false);
   const carryers = getObjectsByPrototype(Creep).filter(
     c => c.my && c.body.some(b => b.type === "carry") && c.body.every(b => b.type === "work")
   );
